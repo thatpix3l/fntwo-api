@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"net"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -23,129 +22,161 @@ var (
 
 // Entire data related to transformations for a VRM model
 type vrmType struct {
-	Bones vrmBones `json:"bones,omit_empty"`
+	Bones       vrmBones       `json:"bones,omitempty"`        // Updated bone data
+	BlendShapes vrmBlendShapes `json:"blend_shapes,omitempty"` // Updated blend shape data
 }
 
-// Properties of a single VRM bone
-type bone struct {
-	PositionX float32 `json:"position_x,omit_empty"`
-	PositionY float32 `json:"position_y,omit_empty"`
-	PositionZ float32 `json:"position_z,omit_empty"`
+type vrmBlendShapes struct {
+	FaceBlendShapes vrmFaceBlendShapes `json:"face,omitempty"`
+}
 
-	QuaternionX float32 `json:"quaternion_x,omit_empty"`
-	QuaternionY float32 `json:"quaternion_y,omit_empty"`
-	QuaternionZ float32 `json:"quaternion_z,omit_empty"`
-	QuaternionW float32 `json:"quaternion_w,omit_empty"`
+type vrmFaceBlendShapes struct {
+	EyeBlinkLeft        float32 `json:"eye_blink_left,omitempty"`
+	EyeLookDownLeft     float32 `json:"eye_look_down_left,omitempty"`
+	EyeLookInLeft       float32 `json:"eye_look_in_left,omitempty"`
+	EyeLookOutLeft      float32 `json:"eye_look_out_left,omitempty"`
+	EyeLookUpLeft       float32 `json:"eye_look_up_left,omitempty"`
+	EyeSquintLeft       float32 `json:"eye_squint_left,omitempty"`
+	EyeWideLeft         float32 `json:"eye_wide_left,omitempty"`
+	EyeBlinkRight       float32 `json:"eye_blink_right,omitempty"`
+	EyeLookDownRight    float32 `json:"eye_look_down_right,omitempty"`
+	EyeLookInRight      float32 `json:"eye_look_in_right,omitempty"`
+	EyeLookOutRight     float32 `json:"eye_look_out_right,omitempty"`
+	EyeLookUpRight      float32 `json:"eye_look_up_right,omitempty"`
+	EyeSquintRight      float32 `json:"eye_squint_right,omitempty"`
+	EyeWideRight        float32 `json:"eye_wide_right,omitempty"`
+	JawForward          float32 `json:"jaw_forward,omitempty"`
+	JawLeft             float32 `json:"jaw_left,omitempty"`
+	JawRight            float32 `json:"jaw_right,omitempty"`
+	JawOpen             float32 `json:"jaw_open,omitempty"`
+	MouthClose          float32 `json:"mouth_close,omitempty"`
+	MouthFunnel         float32 `json:"mouth_funnel,omitempty"`
+	MouthPucker         float32 `json:"mouth_pucker,omitempty"`
+	MouthLeft           float32 `json:"mouth_left,omitempty"`
+	MouthRight          float32 `json:"mouth_right,omitempty"`
+	MouthSmileLeft      float32 `json:"mouth_smile_left,omitempty"`
+	MouthSmileRight     float32 `json:"mouth_smile_right,omitempty"`
+	MouthFrownLeft      float32 `json:"mouth_frown_left,omitempty"`
+	MouthFrownRight     float32 `json:"mouth_frown_right,omitempty"`
+	MouthDimpleLeft     float32 `json:"mouth_dimple_left,omitempty"`
+	MouthDimpleRight    float32 `json:"mouth_dimple_right,omitempty"`
+	MouthStretchLeft    float32 `json:"mouth_stretch_left,omitempty"`
+	MouthStretchRight   float32 `json:"mouth_stretch_right,omitempty"`
+	MouthRollLower      float32 `json:"mouth_roll_lower,omitempty"`
+	MouthRollUpper      float32 `json:"mouth_roll_upper,omitempty"`
+	MouthShrugLower     float32 `json:"mouth_shrug_lower,omitempty"`
+	MouthShrugUpper     float32 `json:"mouth_shrug_upper,omitempty"`
+	MouthPressLeft      float32 `json:"mouth_press_left,omitempty"`
+	MouthPressRight     float32 `json:"mouth_press_right,omitempty"`
+	MouthLowerDownLeft  float32 `json:"mouth_lower_down_left,omitempty"`
+	MouthLowerDownRight float32 `json:"mouth_lower_down_right,omitempty"`
+	MouthUpperUpLeft    float32 `json:"mouth_upper_up_left,omitempty"`
+	MouthUpperUpRight   float32 `json:"mouth_upper_up_right,omitempty"`
+	BrowDownLeft        float32 `json:"brow_down_left,omitempty"`
+	BrowDownRight       float32 `json:"brow_down_right,omitempty"`
+	BrowInnerUp         float32 `json:"brow_inner_up,omitempty"`
+	BrowOuterUpLeft     float32 `json:"brow_outer_up_left,omitempty"`
+	BrowOuterUpRight    float32 `json:"brow_outer_up_right,omitempty"`
+	CheekPuff           float32 `json:"cheek_puff,omitempty"`
+	CheekSquintLeft     float32 `json:"cheek_squint_left,omitempty"`
+	CheekSquintRight    float32 `json:"cheek_squint_right,omitempty"`
+	NoseSneerLeft       float32 `json:"nose_sneer_left,omitempty"`
+	NoseSneerRight      float32 `json:"nose_sneer_right,omitempty"`
+	TongueOut           float32 `json:"tongue_out,omitempty"`
+}
+
+type vrmBonePosition struct {
+	X float32 `json:"x,omitempty"`
+	Y float32 `json:"y,omitempty"`
+	Z float32 `json:"z,omitempty"`
+}
+
+type vrmBoneQuaternionRotation struct {
+	X float32 `json:"x,omitempty"`
+	Y float32 `json:"y,omitempty"`
+	Z float32 `json:"z,omitempty"`
+	W float32 `json:"w,omitempty"`
+}
+
+// TODO: add Euler rotation alternative to Quaternion rotations. Math might be involved...
+type vrmBoneRotation struct {
+	Quaternion vrmBoneQuaternionRotation `json:"quaternion,omitempty"`
+	//Euler eulerRotation `json:"euler,omitempty"`
+}
+
+// Properties of a single VRM vrmBone
+type vrmBone struct {
+	Position vrmBonePosition `json:"position,omitempty"`
+	Rotation vrmBoneRotation `json:"rotation,omitempty"`
 }
 
 // All bones used in a VRM model, based off of Unity's HumanBodyBones
 type vrmBones struct {
-	TongueOut               float32 `json:"tongue_out,omit_empty"`
-	Hips                    bone    `json:"hips,omit_empty"`
-	LeftUpperLeg            bone    `json:"left_upper_leg,omit_empty"`
-	RightUpperLeg           bone    `json:"right_upper_leg,omit_empty"`
-	LeftLowerLeg            bone    `json:"left_lower_leg,omit_empty"`
-	RightLowerLeg           bone    `json:"right_lower_leg,omit_empty"`
-	LeftFoot                bone    `json:"left_foot,omit_empty"`
-	RightFoot               bone    `json:"right_foot,omit_empty"`
-	Spine                   bone    `json:"spine,omit_empty"`
-	Chest                   bone    `json:"chest,omit_empty"`
-	UpperChest              bone    `json:"upper_chest,omit_empty"`
-	Neck                    bone    `json:"neck,omit_empty"`
-	Head                    bone    `json:"head,omit_empty"`
-	LeftShoulder            bone    `json:"left_shoulder,omit_empty"`
-	RightShoulder           bone    `json:"right_shoulder,omit_empty"`
-	LeftUpperArm            bone    `json:"left_upper_arm,omit_empty"`
-	RightUpperArm           bone    `json:"right_upper_arm,omit_empty"`
-	LeftLowerArm            bone    `json:"left_lower_arm,omit_empty"`
-	RightLowerArm           bone    `json:"right_lower_arm,omit_empty"`
-	LeftHand                bone    `json:"left_hand,omit_empty"`
-	RightHand               bone    `json:"right_hand,omit_empty"`
-	LeftToes                bone    `json:"left_toes,omit_empty"`
-	RightToes               bone    `json:"right_toes,omit_empty"`
-	LeftEye                 bone    `json:"left_eye,omit_empty"`
-	RightEye                bone    `json:"right_eye,omit_empty"`
-	Jaw                     bone    `json:"jaw,omit_empty"`
-	LeftThumbProximal       bone    `json:"left_thumb_proximal,omit_empty"`
-	LeftThumbIntermediate   bone    `json:"left_thumb_intermediate,omit_empty"`
-	LeftThumbDistal         bone    `json:"left_thumb_distal,omit_empty"`
-	LeftIndexProximal       bone    `json:"left_index_proximal,omit_empty"`
-	LeftIndexIntermediate   bone    `json:"left_index_intermediate,omit_empty"`
-	LeftIndexDistal         bone    `json:"left_index_distal,omit_empty"`
-	LeftMiddleProximal      bone    `json:"left_middle_proximal,omit_empty"`
-	LeftMiddleIntermediate  bone    `json:"left_middle_intermediate,omit_empty"`
-	LeftMiddleDistal        bone    `json:"left_middle_distal,omit_empty"`
-	LeftRingProximal        bone    `json:"left_ring_proximal,omit_empty"`
-	LeftRingIntermediate    bone    `json:"left_ring_intermediate,omit_empty"`
-	LeftRingDistal          bone    `json:"left_ring_distal,omit_empty"`
-	LeftLittleProximal      bone    `json:"left_little_proximal,omit_empty"`
-	LeftLittleIntermediate  bone    `json:"left_little_intermediate,omit_empty"`
-	LeftLittleDistal        bone    `json:"left_little_distal,omit_empty"`
-	RightThumbProximal      bone    `json:"right_thumb_proximal,omit_empty"`
-	RightThumbIntermediate  bone    `json:"right_thumb_intermediate,omit_empty"`
-	RightThumbDistal        bone    `json:"right_thumb_distal,omit_empty"`
-	RightIndexProximal      bone    `json:"right_index_proximal,omit_empty"`
-	RightIndexIntermediate  bone    `json:"right_index_intermediate,omit_empty"`
-	RightIndexDistal        bone    `json:"right_index_distal,omit_empty"`
-	RightMiddleProximal     bone    `json:"right_middle_proximal,omit_empty"`
-	RightMiddleIntermediate bone    `json:"right_middle_intermediate,omit_empty"`
-	RightMiddleDistal       bone    `json:"right_middle_distal,omit_empty"`
-	RightRingProximal       bone    `json:"right_ring_proximal,omit_empty"`
-	RightRingIntermediate   bone    `json:"right_ring_intermediate,omit_empty"`
-	RightRingDistal         bone    `json:"right_ring_distal,omit_empty"`
-	RightLittleProximal     bone    `json:"right_little_proximal,omit_empty"`
-	RightLittleIntermediate bone    `json:"right_little_intermediate,omit_empty"`
-	RightLittleDistal       bone    `json:"right_little_distal,omit_empty"`
-	LastBone                bone    `json:"last_bone,omit_empty"`
-}
-
-func (vrm vrmType) say() {
-	fmt.Println("joe")
+	TongueOut               float32 `json:"tongue_out"`
+	Hips                    vrmBone `json:"hips"`
+	LeftUpperLeg            vrmBone `json:"left_upper_leg"`
+	RightUpperLeg           vrmBone `json:"right_upper_leg"`
+	LeftLowerLeg            vrmBone `json:"left_lower_leg"`
+	RightLowerLeg           vrmBone `json:"right_lower_leg"`
+	LeftFoot                vrmBone `json:"left_foot"`
+	RightFoot               vrmBone `json:"right_foot"`
+	Spine                   vrmBone `json:"spine"`
+	Chest                   vrmBone `json:"chest"`
+	UpperChest              vrmBone `json:"upper_chest"`
+	Neck                    vrmBone `json:"neck"`
+	Head                    vrmBone `json:"head"`
+	LeftShoulder            vrmBone `json:"left_shoulder"`
+	RightShoulder           vrmBone `json:"right_shoulder"`
+	LeftUpperArm            vrmBone `json:"left_upper_arm"`
+	RightUpperArm           vrmBone `json:"right_upper_arm"`
+	LeftLowerArm            vrmBone `json:"left_lower_arm"`
+	RightLowerArm           vrmBone `json:"right_lower_arm"`
+	LeftHand                vrmBone `json:"left_hand"`
+	RightHand               vrmBone `json:"right_hand"`
+	LeftToes                vrmBone `json:"left_toes"`
+	RightToes               vrmBone `json:"right_toes"`
+	LeftEye                 vrmBone `json:"left_eye"`
+	RightEye                vrmBone `json:"right_eye"`
+	Jaw                     vrmBone `json:"jaw"`
+	LeftThumbProximal       vrmBone `json:"left_thumb_proximal"`
+	LeftThumbIntermediate   vrmBone `json:"left_thumb_intermediate"`
+	LeftThumbDistal         vrmBone `json:"left_thumb_distal"`
+	LeftIndexProximal       vrmBone `json:"left_index_proximal"`
+	LeftIndexIntermediate   vrmBone `json:"left_index_intermediate"`
+	LeftIndexDistal         vrmBone `json:"left_index_distal"`
+	LeftMiddleProximal      vrmBone `json:"left_middle_proximal"`
+	LeftMiddleIntermediate  vrmBone `json:"left_middle_intermediate"`
+	LeftMiddleDistal        vrmBone `json:"left_middle_distal"`
+	LeftRingProximal        vrmBone `json:"left_ring_proximal"`
+	LeftRingIntermediate    vrmBone `json:"left_ring_intermediate"`
+	LeftRingDistal          vrmBone `json:"left_ring_distal"`
+	LeftLittleProximal      vrmBone `json:"left_little_proximal"`
+	LeftLittleIntermediate  vrmBone `json:"left_little_intermediate"`
+	LeftLittleDistal        vrmBone `json:"left_little_distal"`
+	RightThumbProximal      vrmBone `json:"right_thumb_proximal"`
+	RightThumbIntermediate  vrmBone `json:"right_thumb_intermediate"`
+	RightThumbDistal        vrmBone `json:"right_thumb_distal"`
+	RightIndexProximal      vrmBone `json:"right_index_proximal"`
+	RightIndexIntermediate  vrmBone `json:"right_index_intermediate"`
+	RightIndexDistal        vrmBone `json:"right_index_distal"`
+	RightMiddleProximal     vrmBone `json:"right_middle_proximal"`
+	RightMiddleIntermediate vrmBone `json:"right_middle_intermediate"`
+	RightMiddleDistal       vrmBone `json:"right_middle_distal"`
+	RightRingProximal       vrmBone `json:"right_ring_proximal"`
+	RightRingIntermediate   vrmBone `json:"right_ring_intermediate"`
+	RightRingDistal         vrmBone `json:"right_ring_distal"`
+	RightLittleProximal     vrmBone `json:"right_little_proximal"`
+	RightLittleIntermediate vrmBone `json:"right_little_intermediate"`
+	RightLittleDistal       vrmBone `json:"right_little_distal"`
+	LastBone                vrmBone `json:"last_bone"`
 }
 
 // Listen for face data
 func listenPerfectSync(address string, port int) {
-	//listenRaw(address, port)
-	listenOSC(address, port)
+	listenVMC(address, port)
 }
 
-func genFloatSlice(interSlice []interface{}) ([]float32, error) {
-	var floatSlice []float32
-
-	for i := 0; i < len(interSlice); i++ {
-
-		assertFloat, ok := (interSlice)[i].(float32)
-		if !ok {
-			return nil, fmt.Errorf("Could not assert to float")
-		}
-
-		floatSlice = append(floatSlice, assertFloat)
-		fmt.Println(interSlice, assertFloat, floatSlice)
-
-	}
-
-	return floatSlice, nil
-
-}
-
-func parseOSC(msg *osc.Message) (string, []float32) {
-	interKey := msg.Arguments[0]
-	interValue := msg.Arguments[1:]
-
-	var key string
-	var value []float32
-
-	key, _ = interKey.(string)
-
-	for i, v := range interValue {
-
-		value[i], _ = v.(float32)
-
-	}
-
-	return key, value
-}
-
+// Helper function to convert CamelCase string to snake_case
 func camelToSnake(str string) (string, error) {
 	matchFirstCap, err := regexp.Compile("(.)([A-Z][a-z]+)")
 	if err != nil {
@@ -164,12 +195,52 @@ func camelToSnake(str string) (string, error) {
 
 }
 
+// Assuming everything after the first index is bone data, type assert it as a slice of float32
+// The positioning of the data is special, where the index is as follows:
+// index 0, 1, 2: bone position X, Y, Z
+// index 3, 4, 5, 6: bone quaternion rotation X, Y, Z, W
+func parseBone(msg *osc.Message) ([]float32, error) {
+	var boneData []float32
+	for _, v := range msg.Arguments[1:] {
+		coord, ok := v.(float32)
+		if !ok {
+			return nil, fmt.Errorf("Unable to type assert OSC message as []float32 bone coords: %s", msg)
+		}
+
+		boneData = append(boneData, coord)
+
+	}
+
+	return boneData, nil
+
+}
+
+// Get first index value of an OSC message, which is the key in the VMC protocol specification
+// Note that, specifically in the VMC protcol, all key names are in CamelCase
+// This is not ideal for javascript naming conventions...or maybe I don't know what I'm doing
+// and am just adding too much excess code...
+func parseKey(msg *osc.Message) (string, error) {
+
+	rawKey, ok := msg.Arguments[0].(string)
+	if !ok {
+		return "", fmt.Errorf("Unable to type assert OSC message string key: %s", msg)
+	}
+
+	key, err := camelToSnake(rawKey)
+	if err != nil {
+		return "", err
+	}
+
+	return key, nil
+
+}
+
 // Listen for face data through OSC from a device in the VMC protocol format
-func listenOSC(address string, port int) {
+func listenVMC(address string, port int) {
 
 	d := osc.NewStandardDispatcher()
 
-	// Now to add whatever routes are needed, according to the protocol
+	// Now to add whatever routes are needed, according to the VMC spec
 
 	d.AddMsgHandler("/VMC/Ext/Blend/Val", func(msg *osc.Message) {
 
@@ -178,48 +249,67 @@ func listenOSC(address string, port int) {
 	// Bone position and rotation request handler
 	d.AddMsgHandler("/VMC/Ext/Bone/Pos", func(msg *osc.Message) {
 
-		// First index of msg payload is the key name, all else is the actual data
-
-		// Get key, convert to snake case
-		key := fmt.Sprintf("%v", msg.Arguments[0])
-		var snakeKey string
-		if modifiedKey, err := camelToSnake(key); err != nil {
-			return
-
-		} else {
-			snakeKey = modifiedKey
-		}
-
-		// Get msg args, type assert to float32
-		var value []float32
-		for _, v := range msg.Arguments[1:] {
-			value = append(value, v.(float32))
-		}
-
-		// Assign rest of args to a new bone type
-		newBone := bone{
-			PositionX:   value[0],
-			PositionY:   value[1],
-			PositionZ:   value[2],
-			QuaternionX: value[3],
-			QuaternionY: value[4],
-			QuaternionZ: value[5],
-			QuaternionW: value[6],
-		}
-
-		// JSON byte representation of the new bone
-		newBoneBytes, err := json.Marshal(newBone)
+		key, err := parseKey(msg)
 		if err != nil {
 			return
 		}
 
-		// JSON byte representation of a new VRM with new bone for specified key
-		newVrmBytes := []byte(
-			fmt.Sprintf("{\"bones\":{\"%s\":%s}}", snakeKey, newBoneBytes),
-		)
+		value, err := parseBone(msg)
+		if err != nil {
+			return
+		}
 
-		// Finally, unmarshal the JSON representation of the VRM into liveVRM
-		if err := json.Unmarshal(newVrmBytes, &liveVRM); err != nil {
+		// Store bone data from OSC message into a map, containing one bone name with data
+		// We're basically creating this structure:
+		//
+		// {
+		//     "vrm_bone_name": {
+		//         "position": {
+		//             "x": bone_pos_x
+		//             "y": bone_pos_y
+		//             "z": bone_pos_z
+		//         },
+		//         "rotation": {
+		//             "quaternion": {
+		//                 "x": bone_rot_quat_x
+		//                 "y": bone_rot_quat_y
+		//                 "z": bone_rot_quat_z
+		//                 "w": bone_rot_quat_w
+		//             }
+		//         }
+		//     }
+		// }
+
+		newBones := make(map[string]vrmBone)
+
+		newBone := vrmBone{
+			Position: vrmBonePosition{
+				X: value[0],
+				Y: value[1],
+				Z: value[2],
+			},
+			Rotation: vrmBoneRotation{
+				Quaternion: vrmBoneQuaternionRotation{
+					X: value[3],
+					Y: value[4],
+					Z: value[5],
+					W: value[6],
+				},
+			},
+		}
+
+		newBones[key] = newBone
+
+		// Marshal our map representation of our bones data structure with one key changed, into bytes
+		newBoneBytes, err := json.Marshal(newBones)
+		if err != nil {
+			return
+
+		}
+
+		// Finally, unmarshal the JSON representation of our bones into the bones section of our VRM
+		if err := json.Unmarshal(newBoneBytes, &liveVRM.Bones); err != nil {
+			fmt.Println(err)
 			return
 		}
 
@@ -234,34 +324,6 @@ func listenOSC(address string, port int) {
 
 	// Blocking listen and serve
 	server.ListenAndServe()
-
-}
-
-func listenRaw(address string, port int) {
-
-	// Valid address and port to listen on
-	addr := net.UDPAddr{
-		Port: port,
-		IP:   net.ParseIP(address),
-	}
-
-	// Bind to address
-	conn, err := net.ListenUDP("udp", &addr)
-	defer conn.Close()
-	if err != nil {
-		log.Printf("Error listening on %s: %s\n", addr.String(), err)
-		panic(err)
-	}
-
-	// UDP packet buffer
-	var buf [12288]byte
-	for {
-		// Read from UDP connection raw bytes
-		rlen, _, _ := conn.ReadFromUDP(buf[:])
-
-		// Do stuff with it
-		fmt.Println(rlen, string(buf[:]))
-	}
 
 }
 
@@ -296,14 +358,12 @@ func main() {
 			return
 		}
 
-		// Times per second to send the VMC data to client
-		vmc_send_frequency := 60
-
 		// Forever send to client VMC data
+		send_data_frequency := 60
 		for {
 
 			ws.WriteJSON(liveVRM)
-			time.Sleep(time.Duration(1e9 / vmc_send_frequency))
+			time.Sleep(time.Duration(1e9 / send_data_frequency))
 
 		}
 
