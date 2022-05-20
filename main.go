@@ -98,22 +98,22 @@ type vrmFaceBlendShapes struct {
 
 // Object positioning properties for any given object
 type objPosition struct {
-	X float32 `json:"x,omitempty"`
-	Y float32 `json:"y,omitempty"`
-	Z float32 `json:"z,omitempty"`
+	X float32 `json:"x"`
+	Y float32 `json:"y"`
+	Z float32 `json:"z"`
 }
 
 // Quaternion rotation properties for any given object
 type objQuaternionRotation struct {
-	X float32 `json:"x,omitempty"`
-	Y float32 `json:"y,omitempty"`
-	Z float32 `json:"z,omitempty"`
-	W float32 `json:"w,omitempty"`
+	X float32 `json:"x"`
+	Y float32 `json:"y"`
+	Z float32 `json:"z"`
+	W float32 `json:"w"`
 }
 
 type objSphericalRotation struct {
-	AzimuthAngle float32 `json:"azimuth,omitempty"`
-	PolarAngle   float32 `json:"polar,omitempty"`
+	AzimuthAngle float32 `json:"azimuth"`
+	PolarAngle   float32 `json:"polar"`
 }
 
 // TODO: add Euler rotation alternative to Quaternion rotations. Math might be involved...
