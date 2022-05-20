@@ -1,4 +1,4 @@
-module github.com/thatpix3l/aganago
+module github.com/thatpix3l/vanezo
 
 go 1.18
 

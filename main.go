@@ -16,9 +16,18 @@ import (
 )
 
 var (
-	// Updated live from a source, as fast as possible
-	liveVRM = vrmType{}
+	liveVRM    = vrmType{}    // VRM transformation data, updated from sources
+	liveCamera = cameraType{} // Camera transformation data, updated from all client
+	wsPool     = make(map[string]*websocket.Conn)
+
+	modelUpdateFrequency  = 60 // Times per second VRM model data is sent to a client
+	cameraUpdateFrequency = 1  // Times per second camera transformation data is sent to all clients
 )
+
+type cameraType struct {
+	Position objPosition `json:"position,omitempty"`
+	Target   objPosition `json:"target,omitempty"`
+}
 
 // Entire data related to transformations for a VRM model
 type vrmType struct {
@@ -26,10 +35,12 @@ type vrmType struct {
 	BlendShapes vrmBlendShapes `json:"blend_shapes,omitempty"` // Updated blend shape data
 }
 
+// All available VRM blend shapes
 type vrmBlendShapes struct {
 	FaceBlendShapes vrmFaceBlendShapes `json:"face,omitempty"`
 }
 
+// The available face blend shapes to modify, based off of Apple's 52 BlendShape AR-kit spec
 type vrmFaceBlendShapes struct {
 	EyeBlinkLeft        float32 `json:"eye_blink_left,omitempty"`
 	EyeLookDownLeft     float32 `json:"eye_look_down_left,omitempty"`
@@ -85,29 +96,37 @@ type vrmFaceBlendShapes struct {
 	TongueOut           float32 `json:"tongue_out,omitempty"`
 }
 
-type vrmBonePosition struct {
+// Object positioning properties for any given object
+type objPosition struct {
 	X float32 `json:"x,omitempty"`
 	Y float32 `json:"y,omitempty"`
 	Z float32 `json:"z,omitempty"`
 }
 
-type vrmBoneQuaternionRotation struct {
+// Quaternion rotation properties for any given object
+type objQuaternionRotation struct {
 	X float32 `json:"x,omitempty"`
 	Y float32 `json:"y,omitempty"`
 	Z float32 `json:"z,omitempty"`
 	W float32 `json:"w,omitempty"`
 }
 
+type objSphericalRotation struct {
+	AzimuthAngle float32 `json:"azimuth,omitempty"`
+	PolarAngle   float32 `json:"polar,omitempty"`
+}
+
 // TODO: add Euler rotation alternative to Quaternion rotations. Math might be involved...
-type vrmBoneRotation struct {
-	Quaternion vrmBoneQuaternionRotation `json:"quaternion,omitempty"`
+type boneRotation struct {
+	Quaternion objQuaternionRotation `json:"quaternion,omitempty"`
+	Spherical  objSphericalRotation  `json:"spherical,omitempty"`
 	//Euler eulerRotation `json:"euler,omitempty"`
 }
 
 // Properties of a single VRM vrmBone
 type vrmBone struct {
-	Position vrmBonePosition `json:"position,omitempty"`
-	Rotation vrmBoneRotation `json:"rotation,omitempty"`
+	Position objPosition  `json:"position,omitempty"`
+	Rotation boneRotation `json:"rotation,omitempty"`
 }
 
 // All bones used in a VRM model, based off of Unity's HumanBodyBones
@@ -171,11 +190,6 @@ type vrmBones struct {
 	LastBone                vrmBone `json:"last_bone"`
 }
 
-// Listen for face data
-func listenPerfectSync(address string, port int) {
-	listenVMC(address, port)
-}
-
 // Helper function to convert CamelCase string to snake_case
 func camelToSnake(str string) (string, error) {
 	matchFirstCap, err := regexp.Compile("(.)([A-Z][a-z]+)")
@@ -235,7 +249,7 @@ func parseKey(msg *osc.Message) (string, error) {
 
 }
 
-// Listen for face data through OSC from a device in the VMC protocol format
+// Listen for face and bone data through OSC from a device in the VMC protocol format
 func listenVMC(address string, port int) {
 
 	d := osc.NewStandardDispatcher()
@@ -283,13 +297,13 @@ func listenVMC(address string, port int) {
 		newBones := make(map[string]vrmBone)
 
 		newBone := vrmBone{
-			Position: vrmBonePosition{
+			Position: objPosition{
 				X: value[0],
 				Y: value[1],
 				Z: value[2],
 			},
-			Rotation: vrmBoneRotation{
-				Quaternion: vrmBoneQuaternionRotation{
+			Rotation: boneRotation{
+				Quaternion: objQuaternionRotation{
 					X: value[3],
 					Y: value[4],
 					Z: value[5],
@@ -303,13 +317,14 @@ func listenVMC(address string, port int) {
 		// Marshal our map representation of our bones data structure with one key changed, into bytes
 		newBoneBytes, err := json.Marshal(newBones)
 		if err != nil {
+			log.Println(err)
 			return
 
 		}
 
 		// Finally, unmarshal the JSON representation of our bones into the bones section of our VRM
 		if err := json.Unmarshal(newBoneBytes, &liveVRM.Bones); err != nil {
-			fmt.Println(err)
+			log.Println(err)
 			return
 		}
 
@@ -343,32 +358,91 @@ func wsUpgrade(w http.ResponseWriter, r *http.Request) (*websocket.Conn, error) 
 	return ws, err
 }
 
+// Update the camera position for all clients
+func updateClientCameras(wsConns map[string]*websocket.Conn) {
+	log.Println(wsConns)
+
+	for k, v := range wsConns {
+
+		log.Printf("Attempting to update camera for client %s...", v.RemoteAddr())
+		// If unable to write JSON to one of the WebSockets, close it and forget reference of it in our map
+		if err := v.WriteJSON(liveCamera); err != nil {
+			log.Println()
+			log.Printf("Error writing JSON to camera client, closing %s\n", v.RemoteAddr())
+			v.Close()
+			delete(wsConns, k)
+			continue
+
+		}
+
+		log.Println("Success!")
+
+	}
+
+}
+
 // Entrypoint
 func main() {
 
-	go listenPerfectSync("0.0.0.0", 39540)
+	// Background listen and serve for face and bone data
+	go listenVMC("0.0.0.0", 39540)
 
 	router := mux.NewRouter()
 
+	// Route for relaying the internal state of the camera to all clients
+	router.HandleFunc("/api/camera", func(w http.ResponseWriter, r *http.Request) {
+
+		log.Printf("Received camera WebSocket request from %s\n", r.RemoteAddr)
+
+		ws, err := wsUpgrade(w, r)
+		if err != nil {
+			log.Println(err)
+		}
+
+		// Store reference to this WebSocket in our pool of clients, so all are updated at once
+		wsID := strconv.Itoa(len(wsPool) + 1)
+		wsPool[wsID] = ws
+
+		// For every time the WebSocket is open, decode JSON camera positioning from request, update liveCamera with it
+		for {
+
+			if err := ws.ReadJSON(&liveCamera); err != nil {
+				log.Printf("Error reading JSON from camera client, closing %s\n", ws.RemoteAddr())
+				ws.Close()
+				return
+
+			}
+
+			log.Printf("Received update request from client %s\n", ws.RemoteAddr())
+			updateClientCameras(wsPool)
+
+		}
+
+	})
+
 	router.HandleFunc("/api/model", func(w http.ResponseWriter, r *http.Request) {
+
 		log.Printf("Received model API request from %s\n", r.RemoteAddr)
+
 		ws, err := wsUpgrade(w, r)
 		if err != nil {
 			log.Println(err)
 			return
 		}
 
-		// Forever send to client VMC data
-		send_data_frequency := 60
+		// Forever send to client the VRM data
 		for {
 
-			ws.WriteJSON(liveVRM)
-			time.Sleep(time.Duration(1e9 / send_data_frequency))
+			if err := ws.WriteJSON(liveVRM); err != nil {
+				return
+			}
+			time.Sleep(time.Duration(1e9 / modelUpdateFrequency))
 
 		}
 
 	})
 
+	// Blocking listen and serve for WebSockets and API server
 	http.ListenAndServe("127.0.0.1:3579", router)
 
 }
