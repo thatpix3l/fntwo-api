@@ -16,12 +16,11 @@ import (
 )
 
 var (
-	liveVRM    = vrmType{}    // VRM transformation data, updated from sources
-	liveCamera = cameraType{} // Camera transformation data, updated from all client
-	wsPool     = make(map[string]*websocket.Conn)
+	liveVRM    = vrmType{}                        // VRM transformation data, updated from sources
+	liveCamera = cameraType{}                     // Camera transformation data, updated from all client
+	wsPool     = make(map[string]*websocket.Conn) // Map of all WebSocket connections
 
-	modelUpdateFrequency  = 60 // Times per second VRM model data is sent to a client
-	cameraUpdateFrequency = 1  // Times per second camera transformation data is sent to all clients
+	modelUpdateFrequency = 60 // Times per second VRM model data is sent to a client
 )
 
 type cameraType struct {
@@ -360,22 +359,12 @@ func wsUpgrade(w http.ResponseWriter, r *http.Request) (*websocket.Conn, error) 
 
 // Update the camera position for all clients
 func updateClientCameras(wsConns map[string]*websocket.Conn) {
-	log.Println(wsConns)
 
-	for k, v := range wsConns {
+	for _, conn := range wsConns {
 
-		log.Printf("Attempting to update camera for client %s...", v.RemoteAddr())
+		log.Printf("Updating camera for client %s...", conn.RemoteAddr())
 		// If unable to write JSON to one of the WebSockets, close it and forget reference of it in our map
-		if err := v.WriteJSON(liveCamera); err != nil {
-			log.Println()
-			log.Printf("Error writing JSON to camera client, closing %s\n", v.RemoteAddr())
-			v.Close()
-			delete(wsConns, k)
-			continue
-
-		}
-
-		log.Println("Success!")
+		conn.WriteJSON(liveCamera)
 
 	}
 
@@ -394,6 +383,7 @@ func main() {
 
 		log.Printf("Received camera WebSocket request from %s\n", r.RemoteAddr)
 
+		// Upgrade GET request to WebSocket
 		ws, err := wsUpgrade(w, r)
 		if err != nil {
 			log.Println(err)
@@ -409,11 +399,13 @@ func main() {
 			if err := ws.ReadJSON(&liveCamera); err != nil {
 				log.Printf("Error reading JSON from camera client, closing %s\n", ws.RemoteAddr())
 				ws.Close()
+				delete(wsPool, wsID)
+
 				return
 
 			}
 
-			log.Printf("Received update request from client %s\n", ws.RemoteAddr())
+			log.Printf("Received camera update request from client %s\n", ws.RemoteAddr())
 			updateClientCameras(wsPool)
 
 		}
@@ -422,7 +414,7 @@ func main() {
 
 	router.HandleFunc("/api/model", func(w http.ResponseWriter, r *http.Request) {
 
-		log.Printf("Received model API request from %s\n", r.RemoteAddr)
+		log.Printf("Received model WebSocket request from %s\n", r.RemoteAddr)
 
 		ws, err := wsUpgrade(w, r)
 		if err != nil {
