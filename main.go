@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"math/rand"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -16,16 +17,26 @@ import (
 )
 
 var (
-	liveVRM    = vrmType{}                        // VRM transformation data, updated from sources
-	liveCamera = cameraType{}                     // Camera transformation data, updated from all client
-	wsPool     = make(map[string]*websocket.Conn) // Map of all WebSocket connections
+	liveVRM = vrmType{} // VRM transformation data, updated from sources
+	pool    = &wsPool{
+		Clients: make(map[string]wsClient),
+	} // Pool of WebSocket clients, along with metadata
 
 	modelUpdateFrequency = 60 // Times per second VRM model data is sent to a client
 )
 
+type wsClient struct {
+	ID   string
+	Conn *websocket.Conn
+}
+
+type wsPool struct {
+	Clients map[string]wsClient
+}
+
 type cameraType struct {
-	Position objPosition `json:"position,omitempty"`
-	Target   objPosition `json:"target,omitempty"`
+	Position objPosition `json:"position"`
+	Target   objPosition `json:"target"`
 }
 
 // Entire data related to transformations for a VRM model
@@ -124,8 +135,8 @@ type boneRotation struct {
 
 // Properties of a single VRM vrmBone
 type vrmBone struct {
-	Position objPosition  `json:"position,omitempty"`
-	Rotation boneRotation `json:"rotation,omitempty"`
+	Position objPosition  `json:"position"`
+	Rotation boneRotation `json:"rotation"`
 }
 
 // All bones used in a VRM model, based off of Unity's HumanBodyBones
@@ -187,6 +198,17 @@ type vrmBones struct {
 	RightLittleIntermediate vrmBone `json:"right_little_intermediate"`
 	RightLittleDistal       vrmBone `json:"right_little_distal"`
 	LastBone                vrmBone `json:"last_bone"`
+}
+
+// Helper function to generate a random string
+func randomString(n int) string {
+	var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
+
+	s := make([]rune, n)
+	for i := range s {
+		s[i] = letters[rand.Intn(len(letters))]
+	}
+	return string(s)
 }
 
 // Helper function to convert CamelCase string to snake_case
@@ -357,17 +379,17 @@ func wsUpgrade(w http.ResponseWriter, r *http.Request) (*websocket.Conn, error) 
 	return ws, err
 }
 
-// Update the camera position for all clients
-func updateClientCameras(wsConns map[string]*websocket.Conn) {
-
-	for _, conn := range wsConns {
-
-		log.Printf("Updating camera for client %s...", conn.RemoteAddr())
-		// If unable to write JSON to one of the WebSockets, close it and forget reference of it in our map
-		conn.WriteJSON(liveCamera)
-
+// Update all clients with a given message
+func updateClients(msgChan chan cameraType) {
+	for {
+		msg := <-msgChan
+		for wsID := range pool.Clients {
+			log.Printf("Updating client %s from %s", pool.Clients[wsID].ID, pool.Clients[wsID].Conn.RemoteAddr())
+			if err := pool.Clients[wsID].Conn.WriteJSON(msg); err != nil {
+				log.Println(err)
+			}
+		}
 	}
-
 }
 
 // Entrypoint
@@ -376,12 +398,14 @@ func main() {
 	// Background listen and serve for face and bone data
 	go listenVMC("0.0.0.0", 39540)
 
+	// Background add, remove and message client list
+	msgChannel := make(chan cameraType)
+	go updateClients(msgChannel)
+
 	router := mux.NewRouter()
 
 	// Route for relaying the internal state of the camera to all clients
 	router.HandleFunc("/api/camera", func(w http.ResponseWriter, r *http.Request) {
-
-		log.Printf("Received camera WebSocket request from %s\n", r.RemoteAddr)
 
 		// Upgrade GET request to WebSocket
 		ws, err := wsUpgrade(w, r)
@@ -389,38 +413,49 @@ func main() {
 			log.Println(err)
 		}
 
-		// Store reference to this WebSocket in our pool of clients, so all are updated at once
-		wsID := strconv.Itoa(len(wsPool) + 1)
-		wsPool[wsID] = ws
+		// Current WebSocket session
+		session := wsClient{
+			Conn: ws,
+			ID:   randomString(6),
+		}
 
-		// For every time the WebSocket is open, decode JSON camera positioning from request, update liveCamera with it
+		// Add session to pool of clients
+		pool.Clients[session.ID] = session
+		log.Printf("Received camera WebSocket request from %s, assigned it ID %s", session.Conn.RemoteAddr(), session.ID)
+
+		// For each time a valid JSON request is received, decode it and send it down the message channel
+		var camera cameraType
 		for {
 
-			if err := ws.ReadJSON(&liveCamera); err != nil {
-				log.Printf("Error reading JSON from camera client, closing %s\n", ws.RemoteAddr())
+			if err := session.Conn.ReadJSON(&camera); err != nil {
+				log.Print("Error reading JSON from camera client")
 				ws.Close()
-				delete(wsPool, wsID)
-
-				return
+				break
 
 			}
+			log.Printf("Client %s from %s sent new camera data", session.ID, session.Conn.RemoteAddr())
 
-			log.Printf("Received camera update request from client %s\n", ws.RemoteAddr())
-			updateClientCameras(wsPool)
+			msgChannel <- camera
 
 		}
 
+		log.Printf("Deleting WebSocket %s from %s", session.ID, session.Conn.RemoteAddr())
+		delete(pool.Clients, session.ID)
+
 	})
 
+	// Live socket handler for updating VRM model data to all connections
 	router.HandleFunc("/api/model", func(w http.ResponseWriter, r *http.Request) {
 
-		log.Printf("Received model WebSocket request from %s\n", r.RemoteAddr)
+		log.Printf("Received model WebSocket request from %s", r.RemoteAddr)
 
 		ws, err := wsUpgrade(w, r)
 		if err != nil {
 			log.Println(err)
 			return
 		}
+
+		defer ws.Close()
 
 		// Forever send to client the VRM data
 		for {
