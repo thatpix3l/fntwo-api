@@ -6,9 +6,7 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
-	"regexp"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -126,8 +124,7 @@ type vrmType struct {
 
 // All available VRM blend shapes
 type vrmBlendShapes struct {
-	DynamicBlendShapes map[string]float32 `json:"dynamic,omitempty"`
-	FaceBlendShapes    vrmFaceBlendShapes `json:"face,omitempty"`
+	FaceBlendShapes vrmFaceBlendShapes `json:"face,omitempty"`
 }
 
 // The available face blend shapes to modify, based off of Apple's 52 BlendShape AR-kit spec
@@ -221,62 +218,62 @@ type vrmBone struct {
 
 // All bones used in a VRM model, based off of Unity's HumanBodyBones
 type vrmBones struct {
-	Hips                    vrmBone `json:"hips"`
-	LeftUpperLeg            vrmBone `json:"left_upper_leg"`
-	RightUpperLeg           vrmBone `json:"right_upper_leg"`
-	LeftLowerLeg            vrmBone `json:"left_lower_leg"`
-	RightLowerLeg           vrmBone `json:"right_lower_leg"`
-	LeftFoot                vrmBone `json:"left_foot"`
-	RightFoot               vrmBone `json:"right_foot"`
-	Spine                   vrmBone `json:"spine"`
-	Chest                   vrmBone `json:"chest"`
-	UpperChest              vrmBone `json:"upper_chest"`
-	Neck                    vrmBone `json:"neck"`
-	Head                    vrmBone `json:"head"`
-	LeftShoulder            vrmBone `json:"left_shoulder"`
-	RightShoulder           vrmBone `json:"right_shoulder"`
-	LeftUpperArm            vrmBone `json:"left_upper_arm"`
-	RightUpperArm           vrmBone `json:"right_upper_arm"`
-	LeftLowerArm            vrmBone `json:"left_lower_arm"`
-	RightLowerArm           vrmBone `json:"right_lower_arm"`
-	LeftHand                vrmBone `json:"left_hand"`
-	RightHand               vrmBone `json:"right_hand"`
-	LeftToes                vrmBone `json:"left_toes"`
-	RightToes               vrmBone `json:"right_toes"`
-	LeftEye                 vrmBone `json:"left_eye"`
-	RightEye                vrmBone `json:"right_eye"`
-	Jaw                     vrmBone `json:"jaw"`
-	LeftThumbProximal       vrmBone `json:"left_thumb_proximal"`
-	LeftThumbIntermediate   vrmBone `json:"left_thumb_intermediate"`
-	LeftThumbDistal         vrmBone `json:"left_thumb_distal"`
-	LeftIndexProximal       vrmBone `json:"left_index_proximal"`
-	LeftIndexIntermediate   vrmBone `json:"left_index_intermediate"`
-	LeftIndexDistal         vrmBone `json:"left_index_distal"`
-	LeftMiddleProximal      vrmBone `json:"left_middle_proximal"`
-	LeftMiddleIntermediate  vrmBone `json:"left_middle_intermediate"`
-	LeftMiddleDistal        vrmBone `json:"left_middle_distal"`
-	LeftRingProximal        vrmBone `json:"left_ring_proximal"`
-	LeftRingIntermediate    vrmBone `json:"left_ring_intermediate"`
-	LeftRingDistal          vrmBone `json:"left_ring_distal"`
-	LeftLittleProximal      vrmBone `json:"left_little_proximal"`
-	LeftLittleIntermediate  vrmBone `json:"left_little_intermediate"`
-	LeftLittleDistal        vrmBone `json:"left_little_distal"`
-	RightThumbProximal      vrmBone `json:"right_thumb_proximal"`
-	RightThumbIntermediate  vrmBone `json:"right_thumb_intermediate"`
-	RightThumbDistal        vrmBone `json:"right_thumb_distal"`
-	RightIndexProximal      vrmBone `json:"right_index_proximal"`
-	RightIndexIntermediate  vrmBone `json:"right_index_intermediate"`
-	RightIndexDistal        vrmBone `json:"right_index_distal"`
-	RightMiddleProximal     vrmBone `json:"right_middle_proximal"`
-	RightMiddleIntermediate vrmBone `json:"right_middle_intermediate"`
-	RightMiddleDistal       vrmBone `json:"right_middle_distal"`
-	RightRingProximal       vrmBone `json:"right_ring_proximal"`
-	RightRingIntermediate   vrmBone `json:"right_ring_intermediate"`
-	RightRingDistal         vrmBone `json:"right_ring_distal"`
-	RightLittleProximal     vrmBone `json:"right_little_proximal"`
-	RightLittleIntermediate vrmBone `json:"right_little_intermediate"`
-	RightLittleDistal       vrmBone `json:"right_little_distal"`
-	LastBone                vrmBone `json:"last_bone"`
+	Hips                    vrmBone `json:"Hips"`
+	LeftUpperLeg            vrmBone `json:"LeftUpperLeg"`
+	RightUpperLeg           vrmBone `json:"RightUpperLeg"`
+	LeftLowerLeg            vrmBone `json:"LeftLowerLeg"`
+	RightLowerLeg           vrmBone `json:"RightLowerLeg"`
+	LeftFoot                vrmBone `json:"LeftFoot"`
+	RightFoot               vrmBone `json:"RightFoot"`
+	Spine                   vrmBone `json:"Spine"`
+	Chest                   vrmBone `json:"Chest"`
+	UpperChest              vrmBone `json:"UpperChest"`
+	Neck                    vrmBone `json:"Neck"`
+	Head                    vrmBone `json:"Head"`
+	LeftShoulder            vrmBone `json:"LeftShoulder"`
+	RightShoulder           vrmBone `json:"RightShoulder"`
+	LeftUpperArm            vrmBone `json:"LeftUpperArm"`
+	RightUpperArm           vrmBone `json:"RightUpperArm"`
+	LeftLowerArm            vrmBone `json:"LeftLowerArm"`
+	RightLowerArm           vrmBone `json:"RightLowerArm"`
+	LeftHand                vrmBone `json:"LeftHand"`
+	RightHand               vrmBone `json:"RightHand"`
+	LeftToes                vrmBone `json:"LeftToes"`
+	RightToes               vrmBone `json:"RightToes"`
+	LeftEye                 vrmBone `json:"LeftEye"`
+	RightEye                vrmBone `json:"RightEye"`
+	Jaw                     vrmBone `json:"Jaw"`
+	LeftThumbProximal       vrmBone `json:"LeftThumbProximal"`
+	LeftThumbIntermediate   vrmBone `json:"LeftThumbIntermediate"`
+	LeftThumbDistal         vrmBone `json:"LeftThumbDistal"`
+	LeftIndexProximal       vrmBone `json:"LeftIndexProximal"`
+	LeftIndexIntermediate   vrmBone `json:"LeftIndexIntermediate"`
+	LeftIndexDistal         vrmBone `json:"LeftIndexDistal"`
+	LeftMiddleProximal      vrmBone `json:"LeftMiddleProximal"`
+	LeftMiddleIntermediate  vrmBone `json:"LeftMiddleIntermediate"`
+	LeftMiddleDistal        vrmBone `json:"LeftMiddleDistal"`
+	LeftRingProximal        vrmBone `json:"LeftRingProximal"`
+	LeftRingIntermediate    vrmBone `json:"LeftRingIntermediate"`
+	LeftRingDistal          vrmBone `json:"LeftRingDistal"`
+	LeftLittleProximal      vrmBone `json:"LeftLittleProximal"`
+	LeftLittleIntermediate  vrmBone `json:"LeftLittleIntermediate"`
+	LeftLittleDistal        vrmBone `json:"LeftLittleDistal"`
+	RightThumbProximal      vrmBone `json:"RightThumbProximal"`
+	RightThumbIntermediate  vrmBone `json:"RightThumbIntermediate"`
+	RightThumbDistal        vrmBone `json:"RightThumbDistal"`
+	RightIndexProximal      vrmBone `json:"RightIndexProximal"`
+	RightIndexIntermediate  vrmBone `json:"RightIndexIntermediate"`
+	RightIndexDistal        vrmBone `json:"RightIndexDistal"`
+	RightMiddleProximal     vrmBone `json:"RightMiddleProximal"`
+	RightMiddleIntermediate vrmBone `json:"RightMiddleIntermediate"`
+	RightMiddleDistal       vrmBone `json:"RightMiddleDistal"`
+	RightRingProximal       vrmBone `json:"RightRingProximal"`
+	RightRingIntermediate   vrmBone `json:"RightRingIntermediate"`
+	RightRingDistal         vrmBone `json:"RightRingDistal"`
+	RightLittleProximal     vrmBone `json:"RightLittleProximal"`
+	RightLittleIntermediate vrmBone `json:"RightLittleIntermediate"`
+	RightLittleDistal       vrmBone `json:"RightLittleDistal"`
+	LastBone                vrmBone `json:"LastBone"`
 }
 
 // Helper function to generate a random string
@@ -288,52 +285,6 @@ func randomString(n int) string {
 		s[i] = letters[rand.Intn(len(letters))]
 	}
 	return string(s)
-}
-
-// Helper function for converting a Mixed_CASE VMC key string into snake_case,
-// expanding "_l" and "_r" endings into "_left" and "_right", respectively
-func normalizeVMCKey(str string) (string, error) {
-	matchAllLowerUpper, err := regexp.Compile("([a-z])([A-Z])")
-	if err != nil {
-		return "", err
-	}
-
-	matchEndingL, err := regexp.Compile("_(l)$")
-	if err != nil {
-		return "", err
-	}
-
-	matchEndingR, err := regexp.Compile("_r$")
-	if err != nil {
-		return "", err
-	}
-
-	str = matchAllLowerUpper.ReplaceAllString(str, "${1}_${2}")
-	str = strings.ToLower(str)
-	str = matchEndingL.ReplaceAllString(str, "_left")
-	str = matchEndingR.ReplaceAllString(str, "_right")
-
-	return str, nil
-
-}
-
-// Helper function to convert CamelCase string to snake_case
-func camelToSnake(str string) (string, error) {
-	matchFirstCap, err := regexp.Compile("(.)([A-Z][a-z]+)")
-	if err != nil {
-		return "", err
-	}
-
-	matchAllCap, err := regexp.Compile("([a-z0-9])([A-Z])")
-	if err != nil {
-		return "", err
-	}
-
-	snake := matchFirstCap.ReplaceAllString(str, "${1}_${2}")
-	snake = matchAllCap.ReplaceAllString(snake, "${1}_${2}")
-
-	return strings.ToLower(snake), nil
-
 }
 
 // Assuming everything after the first index is bone data, type assert it as a slice of float32
@@ -356,26 +307,6 @@ func parseBone(msg *osc.Message) ([]float32, error) {
 
 }
 
-// Get first index value of an OSC message, which is the key in the VMC protocol specification
-// Note that, specifically in the VMC protcol, all key names are in CamelCase
-// This is not ideal for javascript naming conventions...or maybe I don't know what I'm doing
-// and am just adding too much excess code...
-func parseKey(msg *osc.Message) (string, error) {
-
-	rawKey, ok := msg.Arguments[0].(string)
-	if !ok {
-		return "", fmt.Errorf("Unable to type assert OSC message string key: %s", msg)
-	}
-
-	key, err := camelToSnake(rawKey)
-	if err != nil {
-		return "", err
-	}
-
-	return key, nil
-
-}
-
 // Listen for face and bone data through OSC from a device in the VMC protocol format
 func listenVMC(address string, port int) {
 
@@ -386,11 +317,13 @@ func listenVMC(address string, port int) {
 	// BlendShapes handler
 	d.AddMsgHandler("/VMC/Ext/Blend/Val", func(msg *osc.Message) {
 
+		// Get key name
 		key, ok := msg.Arguments[0].(string)
 		if !ok {
 			return
 		}
 
+		// Get value float32
 		blendValue, ok := msg.Arguments[1].(float32)
 		if !ok {
 			return
@@ -405,6 +338,7 @@ func listenVMC(address string, port int) {
 			blendValue = 0
 		}
 
+		// Create map structure, containing a single key with a single value
 		newMap := make(map[string]float32)
 		newMap[key] = blendValue
 
@@ -422,8 +356,8 @@ func listenVMC(address string, port int) {
 	// Bone position and rotation request handler
 	d.AddMsgHandler("/VMC/Ext/Bone/Pos", func(msg *osc.Message) {
 
-		key, err := parseKey(msg)
-		if err != nil {
+		key, ok := msg.Arguments[0].(string)
+		if !ok {
 			return
 		}
 
