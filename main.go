@@ -17,21 +17,100 @@ import (
 )
 
 var (
-	liveVRM = vrmType{} // VRM transformation data, updated from sources
-	pool    = &wsPool{
-		Clients: make(map[string]wsClient),
-	} // Pool of WebSocket clients, along with metadata
-
+	// VRM transformation data, updated from sources
+	liveVRM              = vrmType{}
 	modelUpdateFrequency = 60 // Times per second VRM model data is sent to a client
 )
 
-type wsClient struct {
-	ID   string
-	Conn *websocket.Conn
+type websocketPool struct {
+	Clients          map[string]websocketClient
+	BroadcastChannel chan cameraType
 }
 
-type wsPool struct {
-	Clients map[string]wsClient
+type websocketClient struct {
+	ID      string
+	Channel chan cameraType
+}
+
+func newPool() websocketPool {
+	p := websocketPool{
+		Clients:          make(map[string]websocketClient),
+		BroadcastChannel: make(chan cameraType),
+	}
+	return p
+}
+
+func (p websocketPool) send(msg cameraType) {
+	p.BroadcastChannel <- msg
+}
+
+func (p websocketPool) count() int {
+	return len(p.Clients)
+}
+
+func (p websocketPool) add(id string) {
+	log.Printf("Adding WebSocket client with ID %s", id)
+	newClient := websocketClient{
+		ID:      id,
+		Channel: make(chan cameraType),
+	}
+
+	p.Clients[id] = newClient
+
+}
+
+func (p websocketPool) remove(id string) {
+	log.Printf("Removing WebSocket client with ID %s", id)
+	close(p.Clients[id].Channel)
+	delete(p.Clients, id)
+}
+
+func (p websocketPool) start() {
+	log.Printf("Listening for messages from broadcasting channel")
+	for {
+		msg := <-p.BroadcastChannel
+		log.Printf("Received message from broadcasting channel")
+		for _, client := range p.Clients {
+			log.Printf("Updating client %s", client.ID)
+			client.Channel <- msg
+		}
+	}
+}
+
+func (p websocketPool) listen(id string, ws *websocket.Conn) {
+
+	// Add new client with ID
+	p.add(id)
+	log.Printf("Pool count of clients: %d", p.count())
+
+	// Background listen for broadcast messages from channel with this ID
+	go func() {
+		for {
+			data, ok := <-p.Clients[id].Channel
+			if !ok {
+				return
+			}
+			ws.WriteJSON(data)
+		}
+	}()
+
+	// For each time a valid JSON request is received, decode it and send it down the message channel
+	for {
+
+		var camera cameraType
+		if err := ws.ReadJSON(&camera); err != nil {
+			log.Print("Error reading JSON from camera client")
+			p.remove(id)
+			ws.Close()
+			return
+
+		}
+
+		log.Printf("Client %s from %s sent new camera data", id, ws.RemoteAddr())
+		p.send(camera)
+
+	}
+
 }
 
 type cameraType struct {
@@ -47,63 +126,64 @@ type vrmType struct {
 
 // All available VRM blend shapes
 type vrmBlendShapes struct {
-	FaceBlendShapes vrmFaceBlendShapes `json:"face,omitempty"`
+	DynamicBlendShapes map[string]float32 `json:"dynamic,omitempty"`
+	FaceBlendShapes    vrmFaceBlendShapes `json:"face,omitempty"`
 }
 
 // The available face blend shapes to modify, based off of Apple's 52 BlendShape AR-kit spec
 type vrmFaceBlendShapes struct {
-	EyeBlinkLeft        float32 `json:"eye_blink_left,omitempty"`
-	EyeLookDownLeft     float32 `json:"eye_look_down_left,omitempty"`
-	EyeLookInLeft       float32 `json:"eye_look_in_left,omitempty"`
-	EyeLookOutLeft      float32 `json:"eye_look_out_left,omitempty"`
-	EyeLookUpLeft       float32 `json:"eye_look_up_left,omitempty"`
-	EyeSquintLeft       float32 `json:"eye_squint_left,omitempty"`
-	EyeWideLeft         float32 `json:"eye_wide_left,omitempty"`
-	EyeBlinkRight       float32 `json:"eye_blink_right,omitempty"`
-	EyeLookDownRight    float32 `json:"eye_look_down_right,omitempty"`
-	EyeLookInRight      float32 `json:"eye_look_in_right,omitempty"`
-	EyeLookOutRight     float32 `json:"eye_look_out_right,omitempty"`
-	EyeLookUpRight      float32 `json:"eye_look_up_right,omitempty"`
-	EyeSquintRight      float32 `json:"eye_squint_right,omitempty"`
-	EyeWideRight        float32 `json:"eye_wide_right,omitempty"`
-	JawForward          float32 `json:"jaw_forward,omitempty"`
-	JawLeft             float32 `json:"jaw_left,omitempty"`
-	JawRight            float32 `json:"jaw_right,omitempty"`
-	JawOpen             float32 `json:"jaw_open,omitempty"`
-	MouthClose          float32 `json:"mouth_close,omitempty"`
-	MouthFunnel         float32 `json:"mouth_funnel,omitempty"`
-	MouthPucker         float32 `json:"mouth_pucker,omitempty"`
-	MouthLeft           float32 `json:"mouth_left,omitempty"`
-	MouthRight          float32 `json:"mouth_right,omitempty"`
-	MouthSmileLeft      float32 `json:"mouth_smile_left,omitempty"`
-	MouthSmileRight     float32 `json:"mouth_smile_right,omitempty"`
-	MouthFrownLeft      float32 `json:"mouth_frown_left,omitempty"`
-	MouthFrownRight     float32 `json:"mouth_frown_right,omitempty"`
-	MouthDimpleLeft     float32 `json:"mouth_dimple_left,omitempty"`
-	MouthDimpleRight    float32 `json:"mouth_dimple_right,omitempty"`
-	MouthStretchLeft    float32 `json:"mouth_stretch_left,omitempty"`
-	MouthStretchRight   float32 `json:"mouth_stretch_right,omitempty"`
-	MouthRollLower      float32 `json:"mouth_roll_lower,omitempty"`
-	MouthRollUpper      float32 `json:"mouth_roll_upper,omitempty"`
-	MouthShrugLower     float32 `json:"mouth_shrug_lower,omitempty"`
-	MouthShrugUpper     float32 `json:"mouth_shrug_upper,omitempty"`
-	MouthPressLeft      float32 `json:"mouth_press_left,omitempty"`
-	MouthPressRight     float32 `json:"mouth_press_right,omitempty"`
-	MouthLowerDownLeft  float32 `json:"mouth_lower_down_left,omitempty"`
-	MouthLowerDownRight float32 `json:"mouth_lower_down_right,omitempty"`
-	MouthUpperUpLeft    float32 `json:"mouth_upper_up_left,omitempty"`
-	MouthUpperUpRight   float32 `json:"mouth_upper_up_right,omitempty"`
-	BrowDownLeft        float32 `json:"brow_down_left,omitempty"`
-	BrowDownRight       float32 `json:"brow_down_right,omitempty"`
-	BrowInnerUp         float32 `json:"brow_inner_up,omitempty"`
-	BrowOuterUpLeft     float32 `json:"brow_outer_up_left,omitempty"`
-	BrowOuterUpRight    float32 `json:"brow_outer_up_right,omitempty"`
-	CheekPuff           float32 `json:"cheek_puff,omitempty"`
-	CheekSquintLeft     float32 `json:"cheek_squint_left,omitempty"`
-	CheekSquintRight    float32 `json:"cheek_squint_right,omitempty"`
-	NoseSneerLeft       float32 `json:"nose_sneer_left,omitempty"`
-	NoseSneerRight      float32 `json:"nose_sneer_right,omitempty"`
-	TongueOut           float32 `json:"tongue_out,omitempty"`
+	EyeBlinkLeft        float32 `json:"EyeBlinkLeft"`
+	EyeLookDownLeft     float32 `json:"EyeLookDownLeft"`
+	EyeLookInLeft       float32 `json:"EyeLookInLeft"`
+	EyeLookOutLeft      float32 `json:"EyeLookOutLeft"`
+	EyeLookUpLeft       float32 `json:"EyeLookUpLeft"`
+	EyeSquintLeft       float32 `json:"EyeSquintLeft"`
+	EyeWideLeft         float32 `json:"EyeWideLeft"`
+	EyeBlinkRight       float32 `json:"EyeBlinkRight"`
+	EyeLookDownRight    float32 `json:"EyeLookDownRight"`
+	EyeLookInRight      float32 `json:"EyeLookInRight"`
+	EyeLookOutRight     float32 `json:"EyeLookOutRight"`
+	EyeLookUpRight      float32 `json:"EyeLookUpRight"`
+	EyeSquintRight      float32 `json:"EyeSquintRight"`
+	EyeWideRight        float32 `json:"EyeWideRight"`
+	JawForward          float32 `json:"JawForward"`
+	JawLeft             float32 `json:"JawLeft"`
+	JawRight            float32 `json:"JawRight"`
+	JawOpen             float32 `json:"JawOpen"`
+	MouthClose          float32 `json:"MouthClose"`
+	MouthFunnel         float32 `json:"MouthFunnel"`
+	MouthPucker         float32 `json:"MouthPucker"`
+	MouthLeft           float32 `json:"MouthLeft"`
+	MouthRight          float32 `json:"MouthRight"`
+	MouthSmileLeft      float32 `json:"MouthSmileLeft"`
+	MouthSmileRight     float32 `json:"MouthSmileRight"`
+	MouthFrownLeft      float32 `json:"MouthFrownLeft"`
+	MouthFrownRight     float32 `json:"MouthFrownRight"`
+	MouthDimpleLeft     float32 `json:"MouthDimpleLeft"`
+	MouthDimpleRight    float32 `json:"MouthDimpleRight"`
+	MouthStretchLeft    float32 `json:"MouthStretchLeft"`
+	MouthStretchRight   float32 `json:"MouthStretchRight"`
+	MouthRollLower      float32 `json:"MouthRollLower"`
+	MouthRollUpper      float32 `json:"MouthRollUpper"`
+	MouthShrugLower     float32 `json:"MouthShrugLower"`
+	MouthShrugUpper     float32 `json:"MouthShrugUpper"`
+	MouthPressLeft      float32 `json:"MouthPressLeft"`
+	MouthPressRight     float32 `json:"MouthPressRight"`
+	MouthLowerDownLeft  float32 `json:"MouthLowerDownLeft"`
+	MouthLowerDownRight float32 `json:"MouthLowerDownRight"`
+	MouthUpperUpLeft    float32 `json:"MouthUpperUpLeft"`
+	MouthUpperUpRight   float32 `json:"MouthUpperUpRight"`
+	BrowDownLeft        float32 `json:"BrowDownLeft"`
+	BrowDownRight       float32 `json:"BrowDownRight"`
+	BrowInnerUp         float32 `json:"BrowInnerUp"`
+	BrowOuterUpLeft     float32 `json:"BrowOuterUpLeft"`
+	BrowOuterUpRight    float32 `json:"BrowOuterUpRight"`
+	CheekPuff           float32 `json:"CheekPuff"`
+	CheekSquintLeft     float32 `json:"CheekSquintLeft"`
+	CheekSquintRight    float32 `json:"CheekSquintRight"`
+	NoseSneerLeft       float32 `json:"NoseSneerLeft"`
+	NoseSneerRight      float32 `json:"NoseSneerRight"`
+	TongueOut           float32 `json:"TongueOut"`
 }
 
 // Object positioning properties for any given object
@@ -128,7 +208,7 @@ type objSphericalRotation struct {
 
 // TODO: add Euler rotation alternative to Quaternion rotations. Math might be involved...
 type boneRotation struct {
-	Quaternion objQuaternionRotation `json:"quaternion,omitempty"`
+	Quaternion objQuaternionRotation `json:"quaternion"`
 	Spherical  objSphericalRotation  `json:"spherical,omitempty"`
 	//Euler eulerRotation `json:"euler,omitempty"`
 }
@@ -141,7 +221,6 @@ type vrmBone struct {
 
 // All bones used in a VRM model, based off of Unity's HumanBodyBones
 type vrmBones struct {
-	TongueOut               float32 `json:"tongue_out"`
 	Hips                    vrmBone `json:"hips"`
 	LeftUpperLeg            vrmBone `json:"left_upper_leg"`
 	RightUpperLeg           vrmBone `json:"right_upper_leg"`
@@ -211,6 +290,33 @@ func randomString(n int) string {
 	return string(s)
 }
 
+// Helper function for converting a Mixed_CASE VMC key string into snake_case,
+// expanding "_l" and "_r" endings into "_left" and "_right", respectively
+func normalizeVMCKey(str string) (string, error) {
+	matchAllLowerUpper, err := regexp.Compile("([a-z])([A-Z])")
+	if err != nil {
+		return "", err
+	}
+
+	matchEndingL, err := regexp.Compile("_(l)$")
+	if err != nil {
+		return "", err
+	}
+
+	matchEndingR, err := regexp.Compile("_r$")
+	if err != nil {
+		return "", err
+	}
+
+	str = matchAllLowerUpper.ReplaceAllString(str, "${1}_${2}")
+	str = strings.ToLower(str)
+	str = matchEndingL.ReplaceAllString(str, "_left")
+	str = matchEndingR.ReplaceAllString(str, "_right")
+
+	return str, nil
+
+}
+
 // Helper function to convert CamelCase string to snake_case
 func camelToSnake(str string) (string, error) {
 	matchFirstCap, err := regexp.Compile("(.)([A-Z][a-z]+)")
@@ -277,7 +383,39 @@ func listenVMC(address string, port int) {
 
 	// Now to add whatever routes are needed, according to the VMC spec
 
+	// BlendShapes handler
 	d.AddMsgHandler("/VMC/Ext/Blend/Val", func(msg *osc.Message) {
+
+		key, ok := msg.Arguments[0].(string)
+		if !ok {
+			return
+		}
+
+		blendValue, ok := msg.Arguments[1].(float32)
+		if !ok {
+			return
+		}
+
+		// Set max and min for blendValue to betweem 0 and 1
+		if blendValue > 1 {
+			blendValue = 1
+		}
+
+		if blendValue < 0 {
+			blendValue = 0
+		}
+
+		newMap := make(map[string]float32)
+		newMap[key] = blendValue
+
+		mapBytes, err := json.Marshal(newMap)
+		if err != nil {
+			return
+		}
+
+		if err := json.Unmarshal(mapBytes, &liveVRM.BlendShapes.FaceBlendShapes); err != nil {
+			return
+		}
 
 	})
 
@@ -379,28 +517,15 @@ func wsUpgrade(w http.ResponseWriter, r *http.Request) (*websocket.Conn, error) 
 	return ws, err
 }
 
-// Update all clients with a given message
-func updateClients(msgChan chan cameraType) {
-	for {
-		msg := <-msgChan
-		for wsID := range pool.Clients {
-			log.Printf("Updating client %s from %s", pool.Clients[wsID].ID, pool.Clients[wsID].Conn.RemoteAddr())
-			if err := pool.Clients[wsID].Conn.WriteJSON(msg); err != nil {
-				log.Println(err)
-			}
-		}
-	}
-}
-
 // Entrypoint
 func main() {
 
 	// Background listen and serve for face and bone data
 	go listenVMC("0.0.0.0", 39540)
 
-	// Background add, remove and message client list
-	msgChannel := make(chan cameraType)
-	go updateClients(msgChannel)
+	// Create new WebSocket pool, listen in background for messages
+	wsPool := newPool()
+	go wsPool.start()
 
 	router := mux.NewRouter()
 
@@ -413,34 +538,11 @@ func main() {
 			log.Println(err)
 		}
 
-		// Current WebSocket session
-		session := wsClient{
-			Conn: ws,
-			ID:   randomString(6),
-		}
+		// Unique identifier for this WebSocket session
+		wsID := randomString(6)
 
-		// Add session to pool of clients
-		pool.Clients[session.ID] = session
-		log.Printf("Received camera WebSocket request from %s, assigned it ID %s", session.Conn.RemoteAddr(), session.ID)
-
-		// For each time a valid JSON request is received, decode it and send it down the message channel
-		var camera cameraType
-		for {
-
-			if err := session.Conn.ReadJSON(&camera); err != nil {
-				log.Print("Error reading JSON from camera client")
-				ws.Close()
-				break
-
-			}
-			log.Printf("Client %s from %s sent new camera data", session.ID, session.Conn.RemoteAddr())
-
-			msgChannel <- camera
-
-		}
-
-		log.Printf("Deleting WebSocket %s from %s", session.ID, session.Conn.RemoteAddr())
-		delete(pool.Clients, session.ID)
+		// Create new client with this WebSocket connection and indentifier
+		wsPool.listen(wsID, ws)
 
 	})
 
@@ -454,8 +556,6 @@ func main() {
 			log.Println(err)
 			return
 		}
-
-		defer ws.Close()
 
 		// Forever send to client the VRM data
 		for {
