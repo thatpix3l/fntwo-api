@@ -17,7 +17,7 @@ import (
 
 var (
 	liveVRM = vrmType{} // VRM transformation data, updated from sources
-	config  cfg.Keys    // Final config file from command-line usage
+	config  *cfg.Keys   // Final config file from command-line usage
 )
 
 type websocketPool struct {
@@ -453,6 +453,8 @@ func wsUpgrade(w http.ResponseWriter, r *http.Request) (*websocket.Conn, error) 
 
 // Entrypoint
 func Start(generatedConfig *cfg.Keys) {
+
+	config = generatedConfig
 
 	// Background listen and serve for face and bone data
 	go listenVMC(config.VmcListenIP, config.VmcListenPort)
