@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"encoding/json"
@@ -12,12 +12,12 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
 	"github.com/hypebeast/go-osc/osc"
+	"github.com/thatpix3l/vanezo/cfg"
 )
 
 var (
-	// VRM transformation data, updated from sources
-	liveVRM              = vrmType{}
-	modelUpdateFrequency = 60 // Times per second VRM model data is sent to a client
+	liveVRM = vrmType{} // VRM transformation data, updated from sources
+	config  cfg.Keys    // Final config file from command-line usage
 )
 
 type websocketPool struct {
@@ -452,10 +452,10 @@ func wsUpgrade(w http.ResponseWriter, r *http.Request) (*websocket.Conn, error) 
 }
 
 // Entrypoint
-func main() {
+func Start(generatedConfig *cfg.Keys) {
 
 	// Background listen and serve for face and bone data
-	go listenVMC("0.0.0.0", 39540)
+	go listenVMC(config.VmcListenIP, config.VmcListenPort)
 
 	// Create new WebSocket pool, listen in background for messages
 	wsPool := newPool()
@@ -497,13 +497,13 @@ func main() {
 			if err := ws.WriteJSON(liveVRM); err != nil {
 				return
 			}
-			time.Sleep(time.Duration(1e9 / modelUpdateFrequency))
+			time.Sleep(time.Duration(1e9 / config.ModelUpdateFrequency))
 
 		}
 
 	})
 
 	// Blocking listen and serve for WebSockets and API server
-	http.ListenAndServe("127.0.0.1:3579", router)
+	http.ListenAndServe(config.GetWebSocketAddress(), router)
 
 }
