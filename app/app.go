@@ -310,6 +310,8 @@ func parseBone(msg *osc.Message) ([]float32, error) {
 // Listen for face and bone data through OSC from a device in the VMC protocol format
 func listenVMC(address string, port int) {
 
+	log.Printf("Listening for VMC model data on %s:%d", address, port)
+
 	d := osc.NewStandardDispatcher()
 
 	// Now to add whatever routes are needed, according to the VMC spec
@@ -505,6 +507,8 @@ func Start(generatedConfig *cfg.Keys) {
 		}
 
 	})
+
+	log.Printf("Listening for clients on %s", config.GetWebSocketAddress())
 
 	// Blocking listen and serve for WebSockets and API server
 	http.ListenAndServe(config.GetWebSocketAddress(), router)
