@@ -12,9 +12,9 @@ type Keys struct {
 }
 
 func (k Keys) GetVmcSocketAddress() string {
-	return k.VmcListenIP + strconv.Itoa(k.VmcListenPort)
+	return k.VmcListenIP + ":" + strconv.Itoa(k.VmcListenPort)
 }
 
 func (k Keys) GetWebSocketAddress() string {
-	return k.WebListenIP + strconv.Itoa(k.WebListenPort)
+	return k.WebListenIP + ":" + strconv.Itoa(k.WebListenPort)
 }
