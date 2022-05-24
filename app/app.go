@@ -454,6 +454,7 @@ func wsUpgrade(w http.ResponseWriter, r *http.Request) (*websocket.Conn, error) 
 // Entrypoint
 func Start(generatedConfig *cfg.Keys) {
 
+	// Store pointer of generated config file to use throughout this program
 	config = generatedConfig
 
 	// Background listen and serve for face and bone data
