@@ -28,10 +28,12 @@ type Keys struct {
 	ConfigPath           string // Path to config file
 }
 
+// Get the combined string of VMCListenIP and VMCListenPort
 func (k Keys) GetVmcSocketAddress() string {
 	return k.VmcListenIP + ":" + strconv.Itoa(k.VmcListenPort)
 }
 
+// Get the combined string of WebServeIP and WebServePort
 func (k Keys) GetWebSocketAddress() string {
 	return k.WebServeIP + ":" + strconv.Itoa(k.WebServePort)
 }
