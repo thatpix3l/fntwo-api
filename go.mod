@@ -1,4 +1,4 @@
-module github.com/thatpix3l/vanezo
+module github.com/thatpix3l/fntwo
 
 go 1.18
 

@@ -12,7 +12,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
 	"github.com/hypebeast/go-osc/osc"
-	"github.com/thatpix3l/vanezo/cfg"
+	"github.com/thatpix3l/fntwo/cfg"
 )
 
 var (
