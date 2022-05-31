@@ -1,4 +1,4 @@
-# Function Two: fntwo
+# Function Two
 A project comprised of one, possibly two, *maybe even three* functions to make VTubing easy.
 While existing VTube software for 3D avatars are available, none are as truly cross-platform as this one.
 
