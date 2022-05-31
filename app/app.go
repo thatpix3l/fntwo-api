@@ -38,15 +38,16 @@ var (
 )
 
 type websocketPool struct {
-	Clients          map[string]websocketClient
-	BroadcastChannel chan cameraType
+	Clients          map[string]websocketClient // Map of websocketClient
+	BroadcastChannel chan cameraType            // Each websocketClient has access to the exact same channel for any camera data
 }
 
 type websocketClient struct {
-	ID      string
-	Channel chan cameraType
+	ID      string          // A generally unique, runtime ID for each websocketClient
+	Channel chan cameraType // Channel for listening to any new camera data and relaying to client, which is updated by other clients
 }
 
+// Createa and return a new websocketPool
 func newPool() websocketPool {
 	p := websocketPool{
 		Clients:          make(map[string]websocketClient),
@@ -55,14 +56,17 @@ func newPool() websocketPool {
 	return p
 }
 
+// Relay the given camera data to the broadcasting channel, which will eventually propagate to all other clients
 func (p websocketPool) send(msg cameraType) {
 	p.BroadcastChannel <- msg
 }
 
+// Get the current count of all clients
 func (p websocketPool) count() int {
 	return len(p.Clients)
 }
 
+// Add a new websocketClient with the the given ID
 func (p websocketPool) add(id string) {
 	log.Printf("Adding WebSocket client with ID %s", id)
 	newClient := websocketClient{
@@ -74,12 +78,14 @@ func (p websocketPool) add(id string) {
 
 }
 
+// Remove a websocketClient with the given ID
 func (p websocketPool) remove(id string) {
 	log.Printf("Removing WebSocket client with ID %s", id)
 	close(p.Clients[id].Channel)
 	delete(p.Clients, id)
 }
 
+// Start listening for new camera data from the broadcast channel
 func (p websocketPool) start() {
 	log.Printf("Listening for messages from broadcasting channel")
 	for {
@@ -92,6 +98,8 @@ func (p websocketPool) start() {
 	}
 }
 
+// Listening for camera data from frontend and relay to broadcasting channel.
+// Simultaneously, relay from backend to frontend if new camera data has been updated from other clients
 func (p websocketPool) listen(id string, ws *websocket.Conn) {
 
 	// Add new client with ID
@@ -128,6 +136,7 @@ func (p websocketPool) listen(id string, ws *websocket.Conn) {
 
 }
 
+// Camera positioning related settings
 type cameraType struct {
 	Position objPosition `json:"position"`
 	Target   objPosition `json:"target"`
