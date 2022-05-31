@@ -97,7 +97,7 @@ func (p websocketPool) listen(id string, ws *websocket.Conn) {
 
 		var camera cameraType
 		if err := ws.ReadJSON(&camera); err != nil {
-			log.Print("Error reading JSON from camera client")
+			log.Printf("Pool count of clients: %d", p.count())
 			p.remove(id)
 			ws.Close()
 			return
