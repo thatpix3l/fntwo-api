@@ -128,8 +128,8 @@ func newRootCommand() *cobra.Command {
 	rootFlags.StringVarP(&runtimeCfg.ConfigPath, "config", "c", cfgPathNoExt+".{json,yaml,toml,ini}", "Path to a config file.")
 	rootFlags.StringVar(&runtimeCfg.VmcListenIP, "vmc-ip", "0.0.0.0", "Address to listen and receive on for VMC motion data")
 	rootFlags.IntVar(&runtimeCfg.VmcListenPort, "vmc-port", 39540, "Port to listen and receive on for VMC motion data")
-	rootFlags.StringVar(&runtimeCfg.WebListenIP, "web-ip", "127.0.0.1", "Address to serve frontend page on")
-	rootFlags.IntVar(&runtimeCfg.WebListenPort, "web-port", 3579, "Port to serve frontend page on")
+	rootFlags.StringVar(&runtimeCfg.WebServeIP, "web-ip", "127.0.0.1", "Address to serve frontend page on")
+	rootFlags.IntVar(&runtimeCfg.WebServePort, "web-port", 3579, "Port to serve frontend page on")
 	rootFlags.IntVar(&runtimeCfg.ModelUpdateFrequency, "update-frequency", 60, "Times per second the live VRM model data is sent to each client")
 
 	return rootCmd
