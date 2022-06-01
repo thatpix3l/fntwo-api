@@ -428,7 +428,7 @@ func Start(initialConfig *cfg.Initial) {
 
 	})
 
-	// RESTful HTTP route for saving camera state
+	// RESTful HTTP route for receiving commands from clients
 	router.HandleFunc("/api/config", func(w http.ResponseWriter, r *http.Request) {
 
 		log.Println("Received request to save current runtime config")
