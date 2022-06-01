@@ -339,7 +339,9 @@ func Start(initialConfig *cfg.Initial) {
 	initCfg = initialConfig
 
 	// Load runtime config from disk, if it even exists
-	loadRuntimeCfg(initialConfig.RuntimeCfgPath)
+	if err := loadRuntimeCfg(initialConfig.RuntimeCfgPath); err != nil {
+		log.Println(err)
+	}
 
 	// Background listen and serve for face and bone data
 	go listenVMC(initCfg.VmcListenIP, initCfg.VmcListenPort)
