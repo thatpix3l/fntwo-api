@@ -127,6 +127,9 @@ func (p websocketPool) listen(id string, ws *websocket.Conn) {
 	p.add(id)
 	log.Printf("Pool count of clients: %d", p.count())
 
+	// On first time connect, send to client the runtime config of the data
+	ws.WriteJSON(runtimeCfg.Camera)
+
 	// Background listen for broadcast messages from channel with this ID
 	go func() {
 		for {
