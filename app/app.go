@@ -445,7 +445,7 @@ func Start(initialConfig *cfg.Initial) {
 	}).Methods("PUT")
 
 	// Blocking listen and serve for WebSockets and API server
-	log.Printf("Listening for clients on %s", initCfg.GetWebSocketAddress())
+	log.Printf("Listening for clients and API queries on %s", initCfg.GetWebSocketAddress())
 	http.ListenAndServe(initCfg.GetWebSocketAddress(), router)
 
 }
