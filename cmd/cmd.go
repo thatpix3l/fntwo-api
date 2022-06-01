@@ -41,17 +41,17 @@ var (
 	envPrefix        = strings.ToUpper(appName) // Prefix for all environment variables used for configuration
 	initCfgNameNoExt = "config"                 // Name of the default config file used, without an extension
 
-	initCfgHomePath  = path.Join(xdg.ConfigHome, appName)           // Default path to app's config directory
-	initCfgPathNoExt = path.Join(initCfgHomePath, initCfgNameNoExt) // Default path to app's config file, without extension
-	runtimeHomePath  = path.Join(xdg.DataHome, appName)             // Default path to app's runtime-related data files
-	runtimeCfgPath   = path.Join(runtimeHomePath, "runtime.json")   // Default path to app's runtime config file, like camera state
+	initCfgDir       = path.Join(xdg.ConfigHome, appName)       // Default path to app's config directory
+	initCfgFileNoExt = path.Join(initCfgDir, initCfgNameNoExt)  // Default path to app's config file, without extension
+	runtimeCfgDir    = path.Join(xdg.DataHome, appName)         // Default path to app's runtime-related data directory
+	runtimeCfgFile   = path.Join(runtimeCfgDir, "runtime.json") // Default path to app's runtime config file, like camera state
 )
 
 // Entrypoint for command line
 func Start() {
 
 	// Create runtime config home for data
-	os.MkdirAll(runtimeHomePath, 0644)
+	os.MkdirAll(runtimeCfgDir, 0644)
 
 	// Build out root command
 	cmd := newRootCommand()
@@ -68,7 +68,7 @@ func initializeConfig(cmdFlags *pflag.FlagSet) {
 
 	// Setting properties of the config file, before reading and processing
 	v.SetConfigName(initCfgNameNoExt) // Default config name, without extension
-	v.AddConfigPath(initCfgHomePath)  // Path to search for config files
+	v.AddConfigPath(initCfgDir)       // Path to search for config files
 	v.SetEnvPrefix(envPrefix)         // Prefix for all environment variables
 	v.AutomaticEnv()                  // Auto-check if any config keys match env keys
 
@@ -132,13 +132,13 @@ func newRootCommand() *cobra.Command {
 
 	// Here, we start defining a load of flags
 	rootFlags := rootCmd.Flags()
-	rootFlags.StringVarP(&initCfg.ConfigPath, "config", "c", initCfgPathNoExt+".{json,yaml,toml,ini}", "Path to a config file.")
+	rootFlags.StringVarP(&initCfg.ConfigPath, "config", "c", initCfgFileNoExt+".{json,yaml,toml,ini}", "Path to a config file.")
 	rootFlags.StringVar(&initCfg.VmcListenIP, "vmc-ip", "0.0.0.0", "Address to listen and receive on for VMC motion data")
 	rootFlags.IntVar(&initCfg.VmcListenPort, "vmc-port", 39540, "Port to listen and receive on for VMC motion data")
 	rootFlags.StringVar(&initCfg.WebServeIP, "web-ip", "127.0.0.1", "Address to serve frontend page on")
 	rootFlags.IntVar(&initCfg.WebServePort, "web-port", 3579, "Port to serve frontend page on")
 	rootFlags.IntVar(&initCfg.ModelUpdateFrequency, "update-frequency", 60, "Times per second the live VRM model data is sent to each client")
-	rootFlags.StringVar(&initCfg.RuntimeCfgPath, "runtime-cfg", runtimeCfgPath, "Path to config file for storing and retrieving runtime data, like camera state")
+	rootFlags.StringVar(&initCfg.RuntimeCfgPath, "runtime-cfg", runtimeCfgFile, "Path to config file for storing and retrieving runtime data, like camera state")
 
 	return rootCmd
 
