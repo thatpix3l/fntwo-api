@@ -495,7 +495,7 @@ func Start(generatedConfig *cfg.Keys) {
 	router := mux.NewRouter()
 
 	// Route for relaying the internal state of the camera to all clients
-	router.HandleFunc("/api/camera", func(w http.ResponseWriter, r *http.Request) {
+	router.HandleFunc("/client/camera", func(w http.ResponseWriter, r *http.Request) {
 
 		// Upgrade GET request to WebSocket
 		ws, err := wsUpgrade(w, r)
@@ -511,8 +511,8 @@ func Start(generatedConfig *cfg.Keys) {
 
 	})
 
-	// Live socket handler for updating VRM model data to all connections
-	router.HandleFunc("/api/model", func(w http.ResponseWriter, r *http.Request) {
+	// Route for updating VRM model data to all clients
+	router.HandleFunc("/client/model", func(w http.ResponseWriter, r *http.Request) {
 
 		log.Printf("Received model WebSocket request from %s", r.RemoteAddr)
 
