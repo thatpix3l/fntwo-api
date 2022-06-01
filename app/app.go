@@ -20,10 +20,10 @@ package app
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"math/rand"
 	"net/http"
+	"os"
 	"strconv"
 	"time"
 
@@ -35,9 +35,9 @@ import (
 )
 
 var (
-	liveVRM    = obj.VRM{}  // VRM transformation data, updated from sources
-	initCfg    *cfg.Initial // Initial config for settings of the app
-	runtimeCfg *cfg.Runtime // Runtime config for various live data
+	liveVRM    = obj.VRM{}     // VRM transformation data, updated from sources
+	initCfg    *cfg.Initial    // Initial config for settings of the app
+	runtimeCfg = cfg.Runtime{} // Runtime config for various live data
 )
 
 type websocketPool struct {
@@ -61,6 +61,24 @@ func newPool() websocketPool {
 
 // Relay the given camera data to the broadcasting channel, which will eventually propagate to all other clients
 func (p websocketPool) send(msg obj.Camera) {
+
+	log.Println(runtimeCfg)
+
+	// Store copy of the camera data into the runtime config
+	runtimeCfg.Camera = obj.Camera{
+		GazeTowards: obj.Position{
+			X: msg.GazeTowards.X,
+			Y: msg.GazeTowards.Y,
+			Z: msg.GazeTowards.Z,
+		},
+		GazeFrom: obj.Position{
+			X: msg.GazeFrom.X,
+			Y: msg.GazeFrom.Y,
+			Z: msg.GazeFrom.Z,
+		},
+	}
+
+	// Relay message to broadcast channel
 	p.BroadcastChannel <- msg
 }
 
@@ -318,13 +336,30 @@ func wsUpgrade(w http.ResponseWriter, r *http.Request) (*websocket.Conn, error) 
 func loadRuntimeCfg(runtimeCfgPath string) error {
 
 	// Read in a runtime JSON config file
-	content, err := ioutil.ReadFile(runtimeCfgPath)
+	content, err := os.ReadFile(runtimeCfgPath)
 	if err != nil {
 		return err
 	}
 
 	// Unmarshal into memory's runtime config
 	if err := json.Unmarshal(content, &runtimeCfg); err != nil {
+		return err
+	}
+
+	return nil
+
+}
+
+func saveRuntimeCfg(runtimeCfgPath string) error {
+
+	// Convert the runtime config in memory into bytes
+	file, err := json.MarshalIndent(&runtimeCfg, "", " ")
+	if err != nil {
+		return err
+	}
+
+	// Store config bytes into file
+	if err := os.WriteFile(initCfg.RuntimeCfgFile, file, 0644); err != nil {
 		return err
 	}
 
@@ -339,7 +374,7 @@ func Start(initialConfig *cfg.Initial) {
 	initCfg = initialConfig
 
 	// Load runtime config from disk, if it even exists
-	if err := loadRuntimeCfg(initialConfig.RuntimeCfgPath); err != nil {
+	if err := loadRuntimeCfg(initialConfig.RuntimeCfgFile); err != nil {
 		log.Println(err)
 	}
 
@@ -393,18 +428,17 @@ func Start(initialConfig *cfg.Initial) {
 	})
 
 	// RESTful HTTP route for saving camera state
-	router.HandleFunc("/api/camera", func(w http.ResponseWriter, r *http.Request) {
+	router.HandleFunc("/api/config", func(w http.ResponseWriter, r *http.Request) {
 
-		// The camera state to be saved from a PUT request
-		json.NewDecoder(r.Body).Decode(&runtimeCfg.Camera)
+		log.Println("Received request to save current runtime config")
 
-		// Write to runtime config file
-		if file, err := json.MarshalIndent(&runtimeCfg.Camera, "", " "); err != nil {
-			return
+		var action cfg.RuntimeAction
+		json.NewDecoder(r.Body).Decode(&action)
 
-		} else {
-			ioutil.WriteFile(initCfg.RuntimeCfgPath, file, 0644)
-
+		if action.Command == "save" {
+			if err := saveRuntimeCfg(initialConfig.RuntimeCfgFile); err != nil {
+				log.Println(err)
+			}
 		}
 
 	}).Methods("PUT")

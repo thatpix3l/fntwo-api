@@ -41,10 +41,11 @@ var (
 	envPrefix        = strings.ToUpper(appName) // Prefix for all environment variables used for configuration
 	initCfgNameNoExt = "config"                 // Name of the default config file used, without an extension
 
-	initCfgDir       = path.Join(xdg.ConfigHome, appName)       // Default path to app's config directory
-	initCfgFileNoExt = path.Join(initCfgDir, initCfgNameNoExt)  // Default path to app's config file, without extension
-	runtimeCfgDir    = path.Join(xdg.DataHome, appName)         // Default path to app's runtime-related data directory
-	runtimeCfgFile   = path.Join(runtimeCfgDir, "runtime.json") // Default path to app's runtime config file, like camera state
+	initCfgDir       = path.Join(xdg.ConfigHome, appName)       // Default path to config directory
+	initCfgFileNoExt = path.Join(initCfgDir, initCfgNameNoExt)  // Default path to config file, without extension
+	runtimeCfgDir    = path.Join(xdg.DataHome, appName)         // Default path to runtime-related data directory
+	runtimeCfgFile   = path.Join(runtimeCfgDir, "runtime.json") // Default path to runtime config file, like camera state
+	vrmFile          = path.Join(runtimeCfgDir, "default.vrm")  // Default path to VRM file that will be loaded and overwritten
 )
 
 // Entrypoint for command line
@@ -132,13 +133,14 @@ func newRootCommand() *cobra.Command {
 
 	// Here, we start defining a load of flags
 	rootFlags := rootCmd.Flags()
-	rootFlags.StringVarP(&initCfg.ConfigPath, "config", "c", initCfgFileNoExt+".{json,yaml,toml,ini}", "Path to a config file.")
+	rootFlags.StringVarP(&initCfg.InitialCfgFile, "config", "c", initCfgFileNoExt+".{json,yaml,toml,ini}", "Path to a config file.")
 	rootFlags.StringVar(&initCfg.VmcListenIP, "vmc-ip", "0.0.0.0", "Address to listen and receive on for VMC motion data")
 	rootFlags.IntVar(&initCfg.VmcListenPort, "vmc-port", 39540, "Port to listen and receive on for VMC motion data")
 	rootFlags.StringVar(&initCfg.WebServeIP, "web-ip", "127.0.0.1", "Address to serve frontend page on")
 	rootFlags.IntVar(&initCfg.WebServePort, "web-port", 3579, "Port to serve frontend page on")
 	rootFlags.IntVar(&initCfg.ModelUpdateFrequency, "update-frequency", 60, "Times per second the live VRM model data is sent to each client")
-	rootFlags.StringVar(&initCfg.RuntimeCfgPath, "runtime-cfg", runtimeCfgFile, "Path to config file for storing and retrieving runtime data, like camera state")
+	rootFlags.StringVar(&initCfg.RuntimeCfgFile, "runtime-cfg", runtimeCfgFile, "Path to config file for storing and retrieving runtime data, like camera state")
+	rootFlags.StringVar(&initCfg.VRMFile, "vrm-file", vrmFile, "Path to VRM file to load on startup and overwrite")
 
 	return rootCmd
 
