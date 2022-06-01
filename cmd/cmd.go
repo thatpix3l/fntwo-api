@@ -132,7 +132,7 @@ func newRootCommand() *cobra.Command {
 	rootFlags.StringVar(&initCfg.WebServeIP, "web-ip", "127.0.0.1", "Address to serve frontend page on")
 	rootFlags.IntVar(&initCfg.WebServePort, "web-port", 3579, "Port to serve frontend page on")
 	rootFlags.IntVar(&initCfg.ModelUpdateFrequency, "update-frequency", 60, "Times per second the live VRM model data is sent to each client")
-	rootFlags.StringVar(&initCfg.DataPath, "runtime-cfg", runtimeCfgPath, "Path to config file for storing and retrieving runtime data, like camera state")
+	rootFlags.StringVar(&initCfg.RuntimeCfgPath, "runtime-cfg", runtimeCfgPath, "Path to config file for storing and retrieving runtime data, like camera state")
 
 	return rootCmd
 

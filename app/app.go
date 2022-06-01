@@ -35,8 +35,9 @@ import (
 )
 
 var (
-	liveVRM = obj.VRM{}  // VRM transformation data, updated from sources
-	initCfg *cfg.Initial // Final config file from command-line usage
+	liveVRM    = obj.VRM{}  // VRM transformation data, updated from sources
+	initCfg    *cfg.Initial // Initial config for settings of the app
+	runtimeCfg *cfg.Runtime // Runtime config for various live data
 )
 
 type websocketPool struct {
@@ -313,11 +314,32 @@ func wsUpgrade(w http.ResponseWriter, r *http.Request) (*websocket.Conn, error) 
 	return ws, err
 }
 
+// Helper func to load a runtime config file
+func loadRuntimeCfg(runtimeCfgPath string) error {
+
+	// Read in a runtime JSON config file
+	content, err := ioutil.ReadFile(runtimeCfgPath)
+	if err != nil {
+		return err
+	}
+
+	// Unmarshal into memory's runtime config
+	if err := json.Unmarshal(content, &runtimeCfg); err != nil {
+		return err
+	}
+
+	return nil
+
+}
+
 // Entrypoint
 func Start(initialConfig *cfg.Initial) {
 
 	// Store pointer of generated config file to use throughout this program
 	initCfg = initialConfig
+
+	// Load runtime config from disk, if it even exists
+	loadRuntimeCfg(initialConfig.RuntimeCfgPath)
 
 	// Background listen and serve for face and bone data
 	go listenVMC(initCfg.VmcListenIP, initCfg.VmcListenPort)
@@ -372,14 +394,15 @@ func Start(initialConfig *cfg.Initial) {
 	router.HandleFunc("/api/camera", func(w http.ResponseWriter, r *http.Request) {
 
 		// The camera state to be saved from a PUT request
-		var cameraState obj.Camera
-		json.NewDecoder(r.Body).Decode(&cameraState)
+		json.NewDecoder(r.Body).Decode(&runtimeCfg.Camera)
 
-		// Write to DataPath file
-		if file, err := json.MarshalIndent(cameraState, "", " "); err != nil {
+		// Write to runtime config file
+		if file, err := json.MarshalIndent(&runtimeCfg.Camera, "", " "); err != nil {
 			return
+
 		} else {
-			ioutil.WriteFile(initCfg.DataPath, file, 0644)
+			ioutil.WriteFile(initCfg.RuntimeCfgPath, file, 0644)
+
 		}
 
 	}).Methods("PUT")

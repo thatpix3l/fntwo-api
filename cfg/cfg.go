@@ -30,7 +30,7 @@ type Initial struct {
 	WebServeIP           string // IP address to serve the frontend
 	WebServePort         int    // Port to serve the frontend
 	ModelUpdateFrequency int    // Times per second to send the live model data to frontend clients
-	DataPath             string // Path to runtime config file
+	RuntimeCfgPath       string // Path to runtime config file
 	ConfigPath           string // Path to initial config file
 }
 
