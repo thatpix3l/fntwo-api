@@ -17,23 +17,34 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 package cfg
 
-import "strconv"
+import (
+	"strconv"
 
-type Keys struct {
+	"github.com/thatpix3l/fntwo/obj"
+)
+
+// Config used during the start of the program
+type Initial struct {
 	VmcListenIP          string // IP address to listen for VMC data
 	VmcListenPort        int    // Port to listen for VMC data
 	WebServeIP           string // IP address to serve the frontend
 	WebServePort         int    // Port to serve the frontend
 	ModelUpdateFrequency int    // Times per second to send the live model data to frontend clients
-	ConfigPath           string // Path to config file
+	DataPath             string // Path to runtime config file
+	ConfigPath           string // Path to initial config file
+}
+
+// Config used during the runtime of the program
+type Runtime struct {
+	Camera obj.Camera `json:"camera"`
 }
 
 // Get the combined string of VMCListenIP and VMCListenPort
-func (k Keys) GetVmcSocketAddress() string {
-	return k.VmcListenIP + ":" + strconv.Itoa(k.VmcListenPort)
+func (initCfg Initial) GetVmcSocketAddress() string {
+	return initCfg.VmcListenIP + ":" + strconv.Itoa(initCfg.VmcListenPort)
 }
 
 // Get the combined string of WebServeIP and WebServePort
-func (k Keys) GetWebSocketAddress() string {
-	return k.WebServeIP + ":" + strconv.Itoa(k.WebServePort)
+func (initCfg Initial) GetWebSocketAddress() string {
+	return initCfg.WebServeIP + ":" + strconv.Itoa(initCfg.WebServePort)
 }

@@ -20,6 +20,7 @@ package app
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"math/rand"
 	"net/http"
@@ -30,34 +31,35 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/hypebeast/go-osc/osc"
 	"github.com/thatpix3l/fntwo/cfg"
+	"github.com/thatpix3l/fntwo/obj"
 )
 
 var (
-	liveVRM = vrmType{} // VRM transformation data, updated from sources
-	config  *cfg.Keys   // Final config file from command-line usage
+	liveVRM = obj.VRM{}  // VRM transformation data, updated from sources
+	initCfg *cfg.Initial // Final config file from command-line usage
 )
 
 type websocketPool struct {
 	Clients          map[string]websocketClient // Map of websocketClient
-	BroadcastChannel chan cameraType            // Each websocketClient has access to the exact same channel for any camera data
+	BroadcastChannel chan obj.Camera            // Each websocketClient has access to the exact same channel for any camera data
 }
 
 type websocketClient struct {
 	ID      string          // A generally unique, runtime ID for each websocketClient
-	Channel chan cameraType // Channel for listening to any new camera data and relaying to client, which is updated by other clients
+	Channel chan obj.Camera // Channel for listening to any new camera data and relaying to client, which is updated by other clients
 }
 
-// Createa and return a new websocketPool
+// Create and return a new websocketPool
 func newPool() websocketPool {
 	p := websocketPool{
 		Clients:          make(map[string]websocketClient),
-		BroadcastChannel: make(chan cameraType),
+		BroadcastChannel: make(chan obj.Camera),
 	}
 	return p
 }
 
 // Relay the given camera data to the broadcasting channel, which will eventually propagate to all other clients
-func (p websocketPool) send(msg cameraType) {
+func (p websocketPool) send(msg obj.Camera) {
 	p.BroadcastChannel <- msg
 }
 
@@ -71,7 +73,7 @@ func (p websocketPool) add(id string) {
 	log.Printf("Adding WebSocket client with ID %s", id)
 	newClient := websocketClient{
 		ID:      id,
-		Channel: make(chan cameraType),
+		Channel: make(chan obj.Camera),
 	}
 
 	p.Clients[id] = newClient
@@ -120,7 +122,7 @@ func (p websocketPool) listen(id string, ws *websocket.Conn) {
 	// For each time a valid JSON request is received, decode it and send it down the message channel
 	for {
 
-		var camera cameraType
+		var camera obj.Camera
 		if err := ws.ReadJSON(&camera); err != nil {
 			log.Printf("Pool count of clients: %d", p.count())
 			p.remove(id)
@@ -134,172 +136,6 @@ func (p websocketPool) listen(id string, ws *websocket.Conn) {
 
 	}
 
-}
-
-// Camera positioning related settings
-type cameraType struct {
-	Position objPosition `json:"position"`
-	Target   objPosition `json:"target"`
-}
-
-// Entire data related to transformations for a VRM model
-type vrmType struct {
-	Bones       vrmBones       `json:"bones,omitempty"`        // Updated bone data
-	BlendShapes vrmBlendShapes `json:"blend_shapes,omitempty"` // Updated blend shape data
-}
-
-// All available VRM blend shapes
-type vrmBlendShapes struct {
-	FaceBlendShapes vrmFaceBlendShapes `json:"face,omitempty"`
-}
-
-// The available face blend shapes to modify, based off of Apple's 52 BlendShape AR-kit spec
-type vrmFaceBlendShapes struct {
-	EyeBlinkLeft        float32 `json:"EyeBlinkLeft"`
-	EyeLookDownLeft     float32 `json:"EyeLookDownLeft"`
-	EyeLookInLeft       float32 `json:"EyeLookInLeft"`
-	EyeLookOutLeft      float32 `json:"EyeLookOutLeft"`
-	EyeLookUpLeft       float32 `json:"EyeLookUpLeft"`
-	EyeSquintLeft       float32 `json:"EyeSquintLeft"`
-	EyeWideLeft         float32 `json:"EyeWideLeft"`
-	EyeBlinkRight       float32 `json:"EyeBlinkRight"`
-	EyeLookDownRight    float32 `json:"EyeLookDownRight"`
-	EyeLookInRight      float32 `json:"EyeLookInRight"`
-	EyeLookOutRight     float32 `json:"EyeLookOutRight"`
-	EyeLookUpRight      float32 `json:"EyeLookUpRight"`
-	EyeSquintRight      float32 `json:"EyeSquintRight"`
-	EyeWideRight        float32 `json:"EyeWideRight"`
-	JawForward          float32 `json:"JawForward"`
-	JawLeft             float32 `json:"JawLeft"`
-	JawRight            float32 `json:"JawRight"`
-	JawOpen             float32 `json:"JawOpen"`
-	MouthClose          float32 `json:"MouthClose"`
-	MouthFunnel         float32 `json:"MouthFunnel"`
-	MouthPucker         float32 `json:"MouthPucker"`
-	MouthLeft           float32 `json:"MouthLeft"`
-	MouthRight          float32 `json:"MouthRight"`
-	MouthSmileLeft      float32 `json:"MouthSmileLeft"`
-	MouthSmileRight     float32 `json:"MouthSmileRight"`
-	MouthFrownLeft      float32 `json:"MouthFrownLeft"`
-	MouthFrownRight     float32 `json:"MouthFrownRight"`
-	MouthDimpleLeft     float32 `json:"MouthDimpleLeft"`
-	MouthDimpleRight    float32 `json:"MouthDimpleRight"`
-	MouthStretchLeft    float32 `json:"MouthStretchLeft"`
-	MouthStretchRight   float32 `json:"MouthStretchRight"`
-	MouthRollLower      float32 `json:"MouthRollLower"`
-	MouthRollUpper      float32 `json:"MouthRollUpper"`
-	MouthShrugLower     float32 `json:"MouthShrugLower"`
-	MouthShrugUpper     float32 `json:"MouthShrugUpper"`
-	MouthPressLeft      float32 `json:"MouthPressLeft"`
-	MouthPressRight     float32 `json:"MouthPressRight"`
-	MouthLowerDownLeft  float32 `json:"MouthLowerDownLeft"`
-	MouthLowerDownRight float32 `json:"MouthLowerDownRight"`
-	MouthUpperUpLeft    float32 `json:"MouthUpperUpLeft"`
-	MouthUpperUpRight   float32 `json:"MouthUpperUpRight"`
-	BrowDownLeft        float32 `json:"BrowDownLeft"`
-	BrowDownRight       float32 `json:"BrowDownRight"`
-	BrowInnerUp         float32 `json:"BrowInnerUp"`
-	BrowOuterUpLeft     float32 `json:"BrowOuterUpLeft"`
-	BrowOuterUpRight    float32 `json:"BrowOuterUpRight"`
-	CheekPuff           float32 `json:"CheekPuff"`
-	CheekSquintLeft     float32 `json:"CheekSquintLeft"`
-	CheekSquintRight    float32 `json:"CheekSquintRight"`
-	NoseSneerLeft       float32 `json:"NoseSneerLeft"`
-	NoseSneerRight      float32 `json:"NoseSneerRight"`
-	TongueOut           float32 `json:"TongueOut"`
-}
-
-// Object positioning properties for any given object
-type objPosition struct {
-	X float32 `json:"x"`
-	Y float32 `json:"y"`
-	Z float32 `json:"z"`
-}
-
-// Quaternion rotation properties for any given object
-type objQuaternionRotation struct {
-	X float32 `json:"x"`
-	Y float32 `json:"y"`
-	Z float32 `json:"z"`
-	W float32 `json:"w"`
-}
-
-type objSphericalRotation struct {
-	AzimuthAngle float32 `json:"azimuth"`
-	PolarAngle   float32 `json:"polar"`
-}
-
-// TODO: add Euler rotation alternative to Quaternion rotations. Math might be involved...
-type boneRotation struct {
-	Quaternion objQuaternionRotation `json:"quaternion"`
-	Spherical  objSphericalRotation  `json:"spherical,omitempty"`
-	//Euler eulerRotation `json:"euler,omitempty"`
-}
-
-// Properties of a single VRM vrmBone
-type vrmBone struct {
-	Position objPosition  `json:"position"`
-	Rotation boneRotation `json:"rotation"`
-}
-
-// All bones used in a VRM model, based off of Unity's HumanBodyBones
-type vrmBones struct {
-	Hips                    vrmBone `json:"Hips"`
-	LeftUpperLeg            vrmBone `json:"LeftUpperLeg"`
-	RightUpperLeg           vrmBone `json:"RightUpperLeg"`
-	LeftLowerLeg            vrmBone `json:"LeftLowerLeg"`
-	RightLowerLeg           vrmBone `json:"RightLowerLeg"`
-	LeftFoot                vrmBone `json:"LeftFoot"`
-	RightFoot               vrmBone `json:"RightFoot"`
-	Spine                   vrmBone `json:"Spine"`
-	Chest                   vrmBone `json:"Chest"`
-	UpperChest              vrmBone `json:"UpperChest"`
-	Neck                    vrmBone `json:"Neck"`
-	Head                    vrmBone `json:"Head"`
-	LeftShoulder            vrmBone `json:"LeftShoulder"`
-	RightShoulder           vrmBone `json:"RightShoulder"`
-	LeftUpperArm            vrmBone `json:"LeftUpperArm"`
-	RightUpperArm           vrmBone `json:"RightUpperArm"`
-	LeftLowerArm            vrmBone `json:"LeftLowerArm"`
-	RightLowerArm           vrmBone `json:"RightLowerArm"`
-	LeftHand                vrmBone `json:"LeftHand"`
-	RightHand               vrmBone `json:"RightHand"`
-	LeftToes                vrmBone `json:"LeftToes"`
-	RightToes               vrmBone `json:"RightToes"`
-	LeftEye                 vrmBone `json:"LeftEye"`
-	RightEye                vrmBone `json:"RightEye"`
-	Jaw                     vrmBone `json:"Jaw"`
-	LeftThumbProximal       vrmBone `json:"LeftThumbProximal"`
-	LeftThumbIntermediate   vrmBone `json:"LeftThumbIntermediate"`
-	LeftThumbDistal         vrmBone `json:"LeftThumbDistal"`
-	LeftIndexProximal       vrmBone `json:"LeftIndexProximal"`
-	LeftIndexIntermediate   vrmBone `json:"LeftIndexIntermediate"`
-	LeftIndexDistal         vrmBone `json:"LeftIndexDistal"`
-	LeftMiddleProximal      vrmBone `json:"LeftMiddleProximal"`
-	LeftMiddleIntermediate  vrmBone `json:"LeftMiddleIntermediate"`
-	LeftMiddleDistal        vrmBone `json:"LeftMiddleDistal"`
-	LeftRingProximal        vrmBone `json:"LeftRingProximal"`
-	LeftRingIntermediate    vrmBone `json:"LeftRingIntermediate"`
-	LeftRingDistal          vrmBone `json:"LeftRingDistal"`
-	LeftLittleProximal      vrmBone `json:"LeftLittleProximal"`
-	LeftLittleIntermediate  vrmBone `json:"LeftLittleIntermediate"`
-	LeftLittleDistal        vrmBone `json:"LeftLittleDistal"`
-	RightThumbProximal      vrmBone `json:"RightThumbProximal"`
-	RightThumbIntermediate  vrmBone `json:"RightThumbIntermediate"`
-	RightThumbDistal        vrmBone `json:"RightThumbDistal"`
-	RightIndexProximal      vrmBone `json:"RightIndexProximal"`
-	RightIndexIntermediate  vrmBone `json:"RightIndexIntermediate"`
-	RightIndexDistal        vrmBone `json:"RightIndexDistal"`
-	RightMiddleProximal     vrmBone `json:"RightMiddleProximal"`
-	RightMiddleIntermediate vrmBone `json:"RightMiddleIntermediate"`
-	RightMiddleDistal       vrmBone `json:"RightMiddleDistal"`
-	RightRingProximal       vrmBone `json:"RightRingProximal"`
-	RightRingIntermediate   vrmBone `json:"RightRingIntermediate"`
-	RightRingDistal         vrmBone `json:"RightRingDistal"`
-	RightLittleProximal     vrmBone `json:"RightLittleProximal"`
-	RightLittleIntermediate vrmBone `json:"RightLittleIntermediate"`
-	RightLittleDistal       vrmBone `json:"RightLittleDistal"`
-	LastBone                vrmBone `json:"LastBone"`
 }
 
 // Helper function to generate a random string
@@ -375,7 +211,7 @@ func listenVMC(address string, port int) {
 			return
 		}
 
-		if err := json.Unmarshal(mapBytes, &liveVRM.BlendShapes.FaceBlendShapes); err != nil {
+		if err := json.Unmarshal(mapBytes, &liveVRM.BlendShapes.Face); err != nil {
 			return
 		}
 
@@ -415,28 +251,26 @@ func listenVMC(address string, port int) {
 		//     }
 		// }
 
-		newBones := make(map[string]vrmBone)
+		newBoneMap := make(map[string]obj.Bone)
 
-		newBone := vrmBone{
-			Position: objPosition{
+		newBone := obj.Bone{
+			Position: obj.Position{
 				X: value[0],
 				Y: value[1],
 				Z: value[2],
 			},
-			Rotation: boneRotation{
-				Quaternion: objQuaternionRotation{
-					X: value[3],
-					Y: value[4],
-					Z: value[5],
-					W: value[6],
-				},
+			Rotation: obj.QuaternionRotation{
+				X: value[3],
+				Y: value[4],
+				Z: value[5],
+				W: value[6],
 			},
 		}
 
-		newBones[key] = newBone
+		newBoneMap[key] = newBone
 
-		// Marshal our map representation of our bones data structure with one key changed, into bytes
-		newBoneBytes, err := json.Marshal(newBones)
+		// Marshal our map representation of all bones that only has one key, into bytes
+		newBoneBytes, err := json.Marshal(newBoneMap)
 		if err != nil {
 			log.Println(err)
 			return
@@ -480,13 +314,13 @@ func wsUpgrade(w http.ResponseWriter, r *http.Request) (*websocket.Conn, error) 
 }
 
 // Entrypoint
-func Start(generatedConfig *cfg.Keys) {
+func Start(initialConfig *cfg.Initial) {
 
 	// Store pointer of generated config file to use throughout this program
-	config = generatedConfig
+	initCfg = initialConfig
 
 	// Background listen and serve for face and bone data
-	go listenVMC(config.VmcListenIP, config.VmcListenPort)
+	go listenVMC(initCfg.VmcListenIP, initCfg.VmcListenPort)
 
 	// Create new WebSocket pool, listen in background for messages
 	wsPool := newPool()
@@ -528,15 +362,31 @@ func Start(generatedConfig *cfg.Keys) {
 			if err := ws.WriteJSON(liveVRM); err != nil {
 				return
 			}
-			time.Sleep(time.Duration(1e9 / config.ModelUpdateFrequency))
+			time.Sleep(time.Duration(1e9 / initCfg.ModelUpdateFrequency))
 
 		}
 
 	})
 
-	log.Printf("Listening for clients on %s", config.GetWebSocketAddress())
+	// RESTful HTTP route for saving camera state
+	router.HandleFunc("/api/camera", func(w http.ResponseWriter, r *http.Request) {
+
+		// The camera state to be saved from a PUT request
+		var cameraState obj.Camera
+		json.NewDecoder(r.Body).Decode(&cameraState)
+
+		// Write to DataPath file
+		if file, err := json.MarshalIndent(cameraState, "", " "); err != nil {
+			return
+		} else {
+			ioutil.WriteFile(initCfg.DataPath, file, 0644)
+		}
+
+	}).Methods("PUT")
+
+	log.Printf("Listening for clients on %s", initCfg.GetWebSocketAddress())
 
 	// Blocking listen and serve for WebSockets and API server
-	http.ListenAndServe(config.GetWebSocketAddress(), router)
+	http.ListenAndServe(initCfg.GetWebSocketAddress(), router)
 
 }

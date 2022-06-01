@@ -36,13 +36,14 @@ var (
 	// Neat and tidy according to freedesktop.org's base directory specifications.
 	// Along with whatever Windows does, I guess...
 
-	appName      = "fntwo"                  // Name of program. Duh...
-	envPrefix    = strings.ToUpper(appName) // Prefix for all environment variables used for configuration
-	cfgNameNoExt = "config"                 // Name of the default config file used, without an extension
+	appName          = "fntwo"                  // Name of program. Duh...
+	envPrefix        = strings.ToUpper(appName) // Prefix for all environment variables used for configuration
+	initCfgNameNoExt = "config"                 // Name of the default config file used, without an extension
 
-	cfgHomePath  = path.Join(xdg.ConfigHome, appName)   // Default path to app's config directory
-	cfgPathNoExt = path.Join(cfgHomePath, cfgNameNoExt) // Default path to app's config file, without extension
-	dataHomePath = path.Join(xdg.DataHome, appName)     // Default path to app's runtime-related data files
+	initCfgHomePath  = path.Join(xdg.ConfigHome, appName)           // Default path to app's config directory
+	initCfgPathNoExt = path.Join(initCfgHomePath, initCfgNameNoExt) // Default path to app's config file, without extension
+	runtimeHomePath  = path.Join(xdg.DataHome, appName)             // Default path to app's runtime-related data files
+	runtimeCfgPath   = path.Join(runtimeHomePath, "runtime.json")   // Default path to app's runtime config file, like camera state
 )
 
 // Entrypoint for command line
@@ -60,10 +61,10 @@ func initializeConfig(cmdFlags *pflag.FlagSet) {
 	v := viper.New()
 
 	// Setting properties of the config file, before reading and processing
-	v.SetConfigName(cfgNameNoExt) // Default config name, without extension
-	v.AddConfigPath(cfgHomePath)  // Path to search for config files
-	v.SetEnvPrefix(envPrefix)     // Prefix for all environment variables
-	v.AutomaticEnv()              // Auto-check if any config keys match env keys
+	v.SetConfigName(initCfgNameNoExt) // Default config name, without extension
+	v.AddConfigPath(initCfgHomePath)  // Path to search for config files
+	v.SetEnvPrefix(envPrefix)         // Prefix for all environment variables
+	v.AutomaticEnv()                  // Auto-check if any config keys match env keys
 
 	// Create equivalent env var keys for each flag, replace value in flag if not
 	// explicitly changed by the user on the command line
@@ -101,13 +102,13 @@ func initializeConfig(cmdFlags *pflag.FlagSet) {
 // parses them, and finally merges them together
 func newRootCommand() *cobra.Command {
 
-	// Config with all keys that will eventually be used by the actual application
-	var runtimeCfg cfg.Keys
+	// Config var for app initialization
+	var initCfg cfg.Initial
 
 	// Base command of actual program
 	rootCmd := &cobra.Command{
 		Use:   appName,
-		Short: `"v" for "fntwo"`,
+		Short: `Function Two`,
 		Long:  `An easy to use tool for loading, configuring and displaying your VTuber models`,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 
@@ -118,19 +119,20 @@ func newRootCommand() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 
 			// Entrypoint for actual program
-			app.Start(&runtimeCfg)
+			app.Start(&initCfg)
 
 		},
 	}
 
 	// Here, we start defining a load of flags
 	rootFlags := rootCmd.Flags()
-	rootFlags.StringVarP(&runtimeCfg.ConfigPath, "config", "c", cfgPathNoExt+".{json,yaml,toml,ini}", "Path to a config file.")
-	rootFlags.StringVar(&runtimeCfg.VmcListenIP, "vmc-ip", "0.0.0.0", "Address to listen and receive on for VMC motion data")
-	rootFlags.IntVar(&runtimeCfg.VmcListenPort, "vmc-port", 39540, "Port to listen and receive on for VMC motion data")
-	rootFlags.StringVar(&runtimeCfg.WebServeIP, "web-ip", "127.0.0.1", "Address to serve frontend page on")
-	rootFlags.IntVar(&runtimeCfg.WebServePort, "web-port", 3579, "Port to serve frontend page on")
-	rootFlags.IntVar(&runtimeCfg.ModelUpdateFrequency, "update-frequency", 60, "Times per second the live VRM model data is sent to each client")
+	rootFlags.StringVarP(&initCfg.ConfigPath, "config", "c", initCfgPathNoExt+".{json,yaml,toml,ini}", "Path to a config file.")
+	rootFlags.StringVar(&initCfg.VmcListenIP, "vmc-ip", "0.0.0.0", "Address to listen and receive on for VMC motion data")
+	rootFlags.IntVar(&initCfg.VmcListenPort, "vmc-port", 39540, "Port to listen and receive on for VMC motion data")
+	rootFlags.StringVar(&initCfg.WebServeIP, "web-ip", "127.0.0.1", "Address to serve frontend page on")
+	rootFlags.IntVar(&initCfg.WebServePort, "web-port", 3579, "Port to serve frontend page on")
+	rootFlags.IntVar(&initCfg.ModelUpdateFrequency, "update-frequency", 60, "Times per second the live VRM model data is sent to each client")
+	rootFlags.StringVar(&initCfg.DataPath, "runtime-cfg", runtimeCfgPath, "Path to config file for storing and retrieving runtime data, like camera state")
 
 	return rootCmd
 
