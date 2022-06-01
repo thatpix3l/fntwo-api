@@ -62,8 +62,6 @@ func newPool() websocketPool {
 // Relay the given camera data to the broadcasting channel, which will eventually propagate to all other clients
 func (p websocketPool) send(msg obj.Camera) {
 
-	log.Println(runtimeCfg)
-
 	// Store copy of the camera data into the runtime config
 	runtimeCfg.Camera = obj.Camera{
 		GazeTowards: obj.Position{
