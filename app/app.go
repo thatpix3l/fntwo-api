@@ -240,39 +240,22 @@ func listenVMC(address string, port int) {
 	// Bone position and rotation request handler
 	d.AddMsgHandler("/VMC/Ext/Bone/Pos", func(msg *osc.Message) {
 
+		// Bone name
 		key, ok := msg.Arguments[0].(string)
 		if !ok {
 			return
 		}
 
+		// Bone position and rotation
 		value, err := parseBone(msg)
 		if err != nil {
 			return
 		}
 
-		// Store bone data from OSC message into a map, containing one bone name with data
-		// We're basically creating this structure:
-		//
-		// {
-		//     "vrm_bone_name": {
-		//         "position": {
-		//             "x": bone_pos_x
-		//             "y": bone_pos_y
-		//             "z": bone_pos_z
-		//         },
-		//         "rotation": {
-		//             "quaternion": {
-		//                 "x": bone_rot_quat_x
-		//                 "y": bone_rot_quat_y
-		//                 "z": bone_rot_quat_z
-		//                 "w": bone_rot_quat_w
-		//             }
-		//         }
-		//     }
-		// }
-
+		// Map with bone name string keys and obj.Bone values
 		newBoneMap := make(map[string]obj.Bone)
 
+		// New bone structure
 		newBone := obj.Bone{
 			Position: obj.Position{
 				X: value[0],
@@ -287,9 +270,10 @@ func listenVMC(address string, port int) {
 			},
 		}
 
+		// The the bone with the name from the OSC message will have this new bone data
 		newBoneMap[key] = newBone
 
-		// Marshal our map representation of all bones that only has one key, into bytes
+		// Marshal our map representation into bytes
 		newBoneBytes, err := json.Marshal(newBoneMap)
 		if err != nil {
 			log.Println(err)
