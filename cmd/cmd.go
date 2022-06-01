@@ -20,6 +20,7 @@ package cmd
 import (
 	"fmt"
 	"log"
+	"os"
 	"path"
 	"strings"
 
@@ -48,6 +49,11 @@ var (
 
 // Entrypoint for command line
 func Start() {
+
+	// Create runtime config home for data
+	os.MkdirAll(runtimeHomePath, 0644)
+
+	// Build out root command
 	cmd := newRootCommand()
 	if err := cmd.Execute(); err != nil {
 		log.Fatal(err)
