@@ -20,6 +20,7 @@ package app
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"math/rand"
 	"net/http"
@@ -411,6 +412,34 @@ func Start(initialConfig *cfg.Initial) {
 		}
 
 	})
+
+	// Route for getting the default VRM model
+	router.HandleFunc("/api/model", func(w http.ResponseWriter, r *http.Request) {
+
+		w.Header().Set("Content-Disposition", "attachment; filename=default.vrm")
+		http.ServeFile(w, r, initialConfig.VRMFile)
+
+	}).Methods("GET")
+
+	// Route for setting the default VRM model
+	router.HandleFunc("/api/model", func(w http.ResponseWriter, r *http.Request) {
+
+		log.Println("Received request to set default VRM file")
+
+		// Destination VRM file on system
+		dest, err := os.Create(initCfg.VRMFile)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+
+		// Copy request body binary to destination on system
+		if _, err := io.Copy(dest, r.Body); err != nil {
+			log.Println(err)
+			return
+		}
+
+	}).Methods("PUT")
 
 	// RESTful HTTP route for receiving commands from clients
 	router.HandleFunc("/api/config", func(w http.ResponseWriter, r *http.Request) {
