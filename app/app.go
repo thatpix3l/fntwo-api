@@ -475,20 +475,22 @@ func Start(initialConfig *cfg.Initial) {
 
 	}).Methods("PUT")
 
-	// HTTP route for getting the retrieving the initial config for the server
+	// HTTP route for retrieving the initial config for the server
 	router.HandleFunc("/api/initialConfig", func(w http.ResponseWriter, r *http.Request) {
 
 		log.Println("Received request to retrieve initial config")
 
+		// Access control
 		allowHTTPAllPerms(&w)
 
+		// Marshal initial config into bytes
 		initCfgBytes, err := json.Marshal(initCfg)
 		if err != nil {
 			log.Println(err)
 			return
 		}
 
-		// Reply back to request with server's initial config
+		// Reply back to request with byte-format of initial config
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(initCfgBytes)
 
