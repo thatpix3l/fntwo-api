@@ -2,7 +2,6 @@ package frontend
 
 import (
 	"embed"
-	_ "embed"
 	"io/fs"
 )
 
