@@ -41,18 +41,18 @@ var (
 	envPrefix        = strings.ToUpper(appName) // Prefix for all environment variables used for configuration
 	initCfgNameNoExt = "config"                 // Name of the default config file used, without an extension
 
-	initCfgDir       = path.Join(xdg.ConfigHome, appName)       // Default path to config directory
-	initCfgFileNoExt = path.Join(initCfgDir, initCfgNameNoExt)  // Default path to config file, without extension
-	runtimeCfgDir    = path.Join(xdg.DataHome, appName)         // Default path to runtime-related data directory
-	runtimeCfgFile   = path.Join(runtimeCfgDir, "runtime.json") // Default path to runtime config file, like camera state
-	vrmFile          = path.Join(runtimeCfgDir, "default.vrm")  // Default path to VRM file that will be loaded and overwritten
+	initCfgDir       = path.Join(xdg.ConfigHome, appName)        // Default path to config directory
+	initCfgFileNoExt = path.Join(initCfgDir, initCfgNameNoExt)   // Default path to config file, without extension
+	runtimeDataDir   = path.Join(xdg.DataHome, appName)          // Default path to runtime-related data directory
+	runtimeCfgFile   = path.Join(runtimeDataDir, "runtime.json") // Default path to runtime config file, like camera state
+	vrmFile          = path.Join(runtimeDataDir, "default.vrm")  // Default path to VRM file that will be loaded and overwritten
 )
 
 // Entrypoint for command line
 func Start() {
 
 	// Create runtime config home for data
-	os.MkdirAll(runtimeCfgDir, 0644)
+	os.MkdirAll(runtimeDataDir, 0644)
 
 	// Build out root command
 	cmd := newRootCommand()
