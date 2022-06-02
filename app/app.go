@@ -458,7 +458,7 @@ func Start(initialConfig *cfg.Initial) {
 
 		log.Println("Received request to save current runtime config")
 
-		// Decode JSON body fromr request into a RuntimeAction type
+		// Decode JSON body from request into a RuntimeAction type
 		var action cfg.RuntimeAction
 		json.NewDecoder(r.Body).Decode(&action)
 
