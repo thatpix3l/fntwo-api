@@ -475,6 +475,25 @@ func Start(initialConfig *cfg.Initial) {
 
 	}).Methods("PUT")
 
+	// HTTP route for getting the retrieving the initial config for the server
+	router.HandleFunc("/api/initialConfig", func(w http.ResponseWriter, r *http.Request) {
+
+		log.Println("Received request to retrieve initial config")
+
+		allowHTTPAllPerms(&w)
+
+		initCfgBytes, err := json.Marshal(initCfg)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+
+		// Reply back to request with server's initial config
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(initCfgBytes)
+
+	}).Methods("GET")
+
 	// All other requests are sent to the embedded web frontend
 	frontendRoot, err := frontend.FS()
 	if err != nil {

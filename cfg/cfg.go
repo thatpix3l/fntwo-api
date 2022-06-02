@@ -25,14 +25,14 @@ import (
 
 // Config used during the start of the program
 type Initial struct {
-	VmcListenIP          string // IP address to listen for VMC data
-	VmcListenPort        int    // Port to listen for VMC data
-	WebServeIP           string // IP address to serve the frontend
-	WebServePort         int    // Port to serve the frontend
-	ModelUpdateFrequency int    // Times per second to send the live model data to frontend clients
-	RuntimeCfgFile       string // Path to runtime config file
-	InitialCfgFile       string // Path to initial config file
-	VRMFile              string // Path to VRM that will be loaded and overwritten
+	VmcListenIP          string `json:"vmc_listen_ip"`          // IP address to listen for VMC data
+	VmcListenPort        int    `json:"vmc_listen_port"`        // Port to listen for VMC data
+	WebServeIP           string `json:"web_listen_ip"`          // IP address to serve the frontend
+	WebServePort         int    `json:"web_listen_port"`        // Port to serve the frontend
+	ModelUpdateFrequency int    `json:"model_update_frequency"` // Times per second model transformation is sent to clients
+	RuntimeCfgFile       string `json:"runtime_config_file"`    // Path to runtime config file
+	InitialCfgFile       string `json:"initial_config_file"`    // Path to initial config file
+	VRMFile              string `json:"vrm_file"`               // Path to VRM that will be loaded and overwritten
 }
 
 // Config used during the runtime of the program
