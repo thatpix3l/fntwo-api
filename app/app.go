@@ -458,9 +458,11 @@ func Start(initialConfig *cfg.Initial) {
 
 		log.Println("Received request to save current runtime config")
 
+		// Decode JSON body fromr request into a RuntimeAction type
 		var action cfg.RuntimeAction
 		json.NewDecoder(r.Body).Decode(&action)
 
+		// Save the internal state of the runtime config if the action is to "save"
 		if action.Command == "save" {
 			if err := saveRuntimeCfg(initialConfig.RuntimeCfgFile); err != nil {
 				log.Println(err)
