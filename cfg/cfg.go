@@ -46,11 +46,11 @@ type RuntimeAction struct {
 }
 
 // Get the combined string of VMCListenIP and VMCListenPort
-func (initCfg Initial) GetVmcSocketAddress() string {
+func (initCfg Initial) GetVmcServerAddress() string {
 	return initCfg.VmcListenIP + ":" + strconv.Itoa(initCfg.VmcListenPort)
 }
 
 // Get the combined string of WebServeIP and WebServePort
-func (initCfg Initial) GetWebSocketAddress() string {
+func (initCfg Initial) GetWebServerAddress() string {
 	return initCfg.WebServeIP + ":" + strconv.Itoa(initCfg.WebServePort)
 }
