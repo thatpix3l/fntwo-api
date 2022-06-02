@@ -453,20 +453,14 @@ func Start(initialConfig *cfg.Initial) {
 
 	}).Methods("PUT", "OPTIONS")
 
-	// RESTful HTTP route for receiving commands from clients
+	// HTTP PUT request route for saving the internal state of the runtime config
 	router.HandleFunc("/api/config", func(w http.ResponseWriter, r *http.Request) {
 
 		log.Println("Received request to save current runtime config")
 
-		// Decode JSON body from request into a RuntimeAction type
-		var action cfg.RuntimeAction
-		json.NewDecoder(r.Body).Decode(&action)
-
-		// Save the internal state of the runtime config if the action is to "save"
-		if action.Command == "save" {
-			if err := saveRuntimeCfg(initialConfig.RuntimeCfgFile); err != nil {
-				log.Println(err)
-			}
+		// Save the internal state of the runtime config
+		if err := saveRuntimeCfg(initialConfig.RuntimeCfgFile); err != nil {
+			log.Println(err)
 		}
 
 	}).Methods("PUT")
