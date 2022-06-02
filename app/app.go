@@ -461,7 +461,7 @@ func Start(initialConfig *cfg.Initial) {
 	}).Methods("PUT", "OPTIONS")
 
 	// HTTP PUT request route for saving the internal state of the runtime config
-	router.HandleFunc("/api/config", func(w http.ResponseWriter, r *http.Request) {
+	router.HandleFunc("/api/runtimeConfig", func(w http.ResponseWriter, r *http.Request) {
 
 		log.Println("Received request to save current runtime config")
 
