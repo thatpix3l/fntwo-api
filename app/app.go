@@ -87,45 +87,52 @@ func (p websocketPool) count() int {
 	return len(p.Clients)
 }
 
+// Log the number of connected clients
+func (p websocketPool) logCount() {
+	log.Printf("Number of connected clients: %d", p.count())
+}
+
 // Add a new websocketClient with the the given ID
 func (p websocketPool) add(id string) {
-	log.Printf("Adding WebSocket client with ID %s", id)
-	newClient := websocketClient{
+
+	log.Printf("Adding WebSocket camera client with ID %s", id)
+
+	p.Clients[id] = websocketClient{
 		ID:      id,
 		Channel: make(chan obj.Camera),
 	}
-
-	p.Clients[id] = newClient
 
 }
 
 // Remove a websocketClient with the given ID
 func (p websocketPool) remove(id string) {
+
 	log.Printf("Removing WebSocket client with ID %s", id)
+
 	close(p.Clients[id].Channel)
 	delete(p.Clients, id)
+
 }
 
 // Start listening for new camera data from the broadcast channel
 func (p websocketPool) start() {
+
 	log.Printf("Listening for messages from broadcasting channel")
+
 	for {
 		msg := <-p.BroadcastChannel
-		log.Printf("Received message from broadcasting channel")
+		log.Print("Received message from broadcasting channel")
 		for _, client := range p.Clients {
 			log.Printf("Updating client %s", client.ID)
 			client.Channel <- msg
 		}
 	}
+
 }
 
 // Listening for camera data from frontend and relay to broadcasting channel.
 // Simultaneously, relay from backend to frontend if new camera data has been updated from other clients
 func (p websocketPool) listen(id string, ws *websocket.Conn) {
-
-	// Add new client with ID
-	p.add(id)
-	log.Printf("Pool count of clients: %d", p.count())
 
 	// On first time connect, send to client the runtime config of the data
 	ws.WriteJSON(runtimeCfg.Camera)
@@ -146,7 +153,6 @@ func (p websocketPool) listen(id string, ws *websocket.Conn) {
 
 		var camera obj.Camera
 		if err := ws.ReadJSON(&camera); err != nil {
-			log.Printf("Pool count of clients: %d", p.count())
 			p.remove(id)
 			ws.Close()
 			return
@@ -194,7 +200,7 @@ func parseBone(msg *osc.Message) ([]float32, error) {
 // Listen for face and bone data through OSC from a device in the VMC protocol format
 func listenVMC(address string, port int) {
 
-	log.Printf("Listening for VMC model data on %s:%d", address, port)
+	log.Printf("Listening for VMC model transformation data on %s:%d", address, port)
 
 	d := osc.NewStandardDispatcher()
 
@@ -397,14 +403,16 @@ func Start(initialConfig *cfg.Initial) {
 		wsID := randomString(6)
 
 		// Create new client with this WebSocket connection and indentifier
+		wsPool.add(wsID)
+
+		wsPool.logCount()
 		wsPool.listen(wsID, ws)
+		wsPool.logCount()
 
 	})
 
 	// Route for updating VRM model data to all clients
 	router.HandleFunc("/client/model", func(w http.ResponseWriter, r *http.Request) {
-
-		log.Printf("Received model WebSocket request from %s", r.RemoteAddr)
 
 		ws, err := wsUpgrade(w, r)
 		if err != nil {
@@ -504,7 +512,7 @@ func Start(initialConfig *cfg.Initial) {
 	router.PathPrefix("/").Handler(http.FileServer(http.FS(frontendRoot)))
 
 	// Blocking listen and serve for WebSockets and API server
-	log.Printf("Listening for clients and API queries on %s", initCfg.GetWebServerAddress())
+	log.Printf("Serving frontend and listening for clients/API queries on %s", initCfg.GetWebServerAddress())
 	http.ListenAndServe(initCfg.GetWebServerAddress(), router)
 
 }
