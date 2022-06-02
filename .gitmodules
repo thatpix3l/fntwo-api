@@ -1,0 +1,3 @@
+[submodule "frontend/static"]
+	path = frontend/static
+	url = https://github.com/thatpix3l/fntwo-frontend.git

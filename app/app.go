@@ -32,6 +32,7 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/hypebeast/go-osc/osc"
 	"github.com/thatpix3l/fntwo/cfg"
+	"github.com/thatpix3l/fntwo/frontend"
 	"github.com/thatpix3l/fntwo/obj"
 )
 
@@ -462,6 +463,13 @@ func Start(initialConfig *cfg.Initial) {
 		}
 
 	}).Methods("PUT")
+
+	// All other requests are sent to the embedded web frontend
+	frontendRoot, err := frontend.FS()
+	if err != nil {
+		log.Fatal(err)
+	}
+	router.PathPrefix("/").Handler(http.FileServer(http.FS(frontendRoot)))
 
 	// Blocking listen and serve for WebSockets and API server
 	log.Printf("Listening for clients and API queries on %s", initCfg.GetWebServerAddress())
