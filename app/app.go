@@ -433,6 +433,11 @@ func Start(initialConfig *cfg.Initial) {
 
 		log.Println("Received request to set default VRM file")
 
+		// Set CORS policy
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "PUT")
+		w.Header().Set("Access-Control-Allow-Headers", "*")
+
 		// Destination VRM file on system
 		dest, err := os.Create(initCfg.VRMFile)
 		if err != nil {
@@ -446,7 +451,7 @@ func Start(initialConfig *cfg.Initial) {
 			return
 		}
 
-	}).Methods("PUT")
+	}).Methods("PUT", "OPTIONS")
 
 	// RESTful HTTP route for receiving commands from clients
 	router.HandleFunc("/api/config", func(w http.ResponseWriter, r *http.Request) {
