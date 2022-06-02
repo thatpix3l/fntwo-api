@@ -62,7 +62,9 @@ func Start() {
 }
 
 // Take a command, create env variables that are mapped to most flags, load config
-func initializeConfig(cmdFlags *pflag.FlagSet) {
+func initializeConfig(cmd *cobra.Command) {
+
+	cmdFlags := cmd.Flags()
 
 	// Viper config that will be merged from different file sources and env variables
 	v := viper.New()
@@ -73,35 +75,41 @@ func initializeConfig(cmdFlags *pflag.FlagSet) {
 	v.SetEnvPrefix(envPrefix)         // Prefix for all environment variables
 	v.AutomaticEnv()                  // Auto-check if any config keys match env keys
 
+	// If config flag was manually set by the user, set that as the config file to be loaded
+	cfgFlag := cmd.Flag("config")
+	if cfgFlag.Changed {
+		log.Print("Default config file was changed")
+		v.SetConfigFile(cfgFlag.Value.String())
+	}
+
+	// Read in config file
+	if err := v.ReadInConfig(); err != nil {
+		log.Print(err)
+	}
+
 	// Create equivalent env var keys for each flag, replace value in flag if not
 	// explicitly changed by the user on the command line
 	cmdFlags.VisitAll(func(f *pflag.Flag) {
 
 		// Config is a special case. We only want it to be configurable from the command line
-		if f.Name != "config" {
+		if f.Name == "config" {
+			return
+		}
 
-			// Create an env var key mapped to a flag, e.g. "FOO_BAR" is created from "foo-bar".
-			// Take same env var key name, and normalize it to env var naming specification, e.g. "FOO_BAR",
-			// so when assigning FOO_BAR=baz, it maps to foo-bar
-			envKey := envPrefix + "_" + strings.ToUpper(strings.ReplaceAll(f.Name, "-", "_"))
-			v.BindEnv(f.Name, envKey)
+		// Create an env var key mapped to a flag, e.g. "FOO_BAR" is created from "foo-bar".
+		// Take same env var key name, and normalize it to env var naming specification, e.g. "FOO_BAR",
+		// so when assigning FOO_BAR=baz, it maps to foo-bar
+		envKey := envPrefix + "_" + strings.ToUpper(strings.ReplaceAll(f.Name, "-", "_"))
+		v.BindEnv(f.Name, envKey)
 
-			// If current flag value has not been changed and viper config does have a value,
-			// assign to flag the config value
-			if !f.Changed && v.IsSet(f.Name) {
-				flagVal := v.Get(f.Name)
-				cmdFlags.Set(f.Name, fmt.Sprintf("%v", flagVal))
-			}
-
-		} else if f.Changed {
-			// If config has been set by command line, set that to be loaded when reading
-			v.SetConfigFile(f.Value.String())
+		// If command flag is not set and equivalent config key is set,
+		// assign to flag the config value
+		if !f.Changed && v.IsSet(f.Name) {
+			flagVal := v.Get(f.Name)
+			cmdFlags.Set(f.Name, fmt.Sprintf("%v", flagVal))
 		}
 
 	})
-
-	// Load config sources
-	v.ReadInConfig()
 
 }
 
@@ -120,7 +128,7 @@ func newRootCommand() *cobra.Command {
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 
 			// Load and merge config from different sources, based on command flags
-			initializeConfig(cmd.Flags())
+			initializeConfig(cmd)
 
 		},
 		Run: func(cmd *cobra.Command, args []string) {
