@@ -405,8 +405,13 @@ func Start(initialConfig *cfg.Initial) {
 		// Create new client with this WebSocket connection and indentifier
 		wsPool.add(wsID)
 
+		// Log count of clients before listening
 		wsPool.logCount()
+
+		// Blocking listen
 		wsPool.listen(wsID, ws)
+
+		// Log count of clients after done listening
 		wsPool.logCount()
 
 	})
