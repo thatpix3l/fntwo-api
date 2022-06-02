@@ -416,7 +416,13 @@ func Start(initialConfig *cfg.Initial) {
 	// Route for getting the default VRM model
 	router.HandleFunc("/api/model", func(w http.ResponseWriter, r *http.Request) {
 
+		log.Println("Received request to retrieve default VRM file")
+
+		// Set model name and CORS policy
 		w.Header().Set("Content-Disposition", "attachment; filename=default.vrm")
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+
+		// Serve default VRM file
 		http.ServeFile(w, r, initialConfig.VRMFile)
 
 	}).Methods("GET")
