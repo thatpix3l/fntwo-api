@@ -354,6 +354,16 @@ func saveRuntimeCfg(runtimeCfgPath string) error {
 
 }
 
+// Helper func to allow all origin, headers, and methods for HTTP requests.
+func allowHTTPAllPerms(wPtr *http.ResponseWriter) {
+
+	// Set CORS policy
+	(*wPtr).Header().Set("Access-Control-Allow-Origin", "*")
+	(*wPtr).Header().Set("Access-Control-Allow-Methods", "*")
+	(*wPtr).Header().Set("Access-Control-Allow-Headers", "*")
+
+}
+
 // Entrypoint
 func Start(initialConfig *cfg.Initial) {
 
@@ -421,7 +431,7 @@ func Start(initialConfig *cfg.Initial) {
 
 		// Set model name and CORS policy
 		w.Header().Set("Content-Disposition", "attachment; filename=default.vrm")
-		w.Header().Set("Access-Control-Allow-Origin", "*")
+		allowHTTPAllPerms(&w)
 
 		// Serve default VRM file
 		http.ServeFile(w, r, initialConfig.VRMFile)
@@ -433,10 +443,7 @@ func Start(initialConfig *cfg.Initial) {
 
 		log.Println("Received request to set default VRM file")
 
-		// Set CORS policy
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "PUT")
-		w.Header().Set("Access-Control-Allow-Headers", "*")
+		allowHTTPAllPerms(&w)
 
 		// Destination VRM file on system
 		dest, err := os.Create(initCfg.VRMFile)
@@ -457,6 +464,9 @@ func Start(initialConfig *cfg.Initial) {
 	router.HandleFunc("/api/config", func(w http.ResponseWriter, r *http.Request) {
 
 		log.Println("Received request to save current runtime config")
+
+		// Access control
+		allowHTTPAllPerms(&w)
 
 		// Save the internal state of the runtime config
 		if err := saveRuntimeCfg(initialConfig.RuntimeCfgFile); err != nil {
