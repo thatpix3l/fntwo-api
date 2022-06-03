@@ -30,19 +30,14 @@ type Initial struct {
 	WebServeIP           string `json:"web_listen_ip"`          // IP address to serve the frontend
 	WebServePort         int    `json:"web_listen_port"`        // Port to serve the frontend
 	ModelUpdateFrequency int    `json:"model_update_frequency"` // Times per second model transformation is sent to clients
-	RuntimeCfgFile       string `json:"runtime_config_file"`    // Path to runtime config file
+	SceneCfgFile         string `json:"scene_config_file"`      // Path to scene config file
 	InitialCfgFile       string `json:"initial_config_file"`    // Path to initial config file
 	VRMFile              string `json:"vrm_file"`               // Path to VRM that will be loaded and overwritten
 }
 
-// Config used during the runtime of the program
-type Runtime struct {
+// Config used for the looks and appearance when viewing models
+type Scene struct {
 	Camera obj.Camera `json:"camera"`
-}
-
-// Runtime config related actions on what to do with the internal state of the server's runtime config
-type RuntimeAction struct {
-	Command string `json:"command"` // Name of runtime-related command to run
 }
 
 // Get the combined string of VMCListenIP and VMCListenPort

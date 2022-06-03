@@ -41,18 +41,18 @@ var (
 	envPrefix        = strings.ToUpper(appName) // Prefix for all environment variables used for configuration
 	initCfgNameNoExt = "config"                 // Name of the default config file used, without an extension
 
-	initCfgDir       = path.Join(xdg.ConfigHome, appName)        // Default path to config directory
-	initCfgFileNoExt = path.Join(initCfgDir, initCfgNameNoExt)   // Default path to config file, without extension
-	runtimeDataDir   = path.Join(xdg.DataHome, appName)          // Default path to runtime-related data directory
-	runtimeCfgFile   = path.Join(runtimeDataDir, "runtime.json") // Default path to runtime config file, like camera state
-	vrmFile          = path.Join(runtimeDataDir, "default.vrm")  // Default path to VRM file that will be loaded and overwritten
+	initCfgDir       = path.Join(xdg.ConfigHome, appName)      // Default path to config directory
+	initCfgFileNoExt = path.Join(initCfgDir, initCfgNameNoExt) // Default path to config file, without extension
+	sceneDataDir     = path.Join(xdg.DataHome, appName)        // Default path to scene-related data directory
+	sceneCfgFile     = path.Join(sceneDataDir, "scene.json")   // Default path to scene config file, like camera state
+	vrmFile          = path.Join(sceneDataDir, "default.vrm")  // Default path to VRM file that will be loaded and overwritten
 )
 
 // Entrypoint for command line
 func Start() {
 
-	// Create runtime config home for data
-	os.MkdirAll(runtimeDataDir, 0644)
+	// Create scene config home for data
+	os.MkdirAll(sceneDataDir, 0644)
 
 	// Build out root command
 	cmd := newRootCommand()
@@ -147,7 +147,7 @@ func newRootCommand() *cobra.Command {
 	rootFlags.StringVar(&initCfg.WebServeIP, "web-ip", "127.0.0.1", "Address to serve frontend page on")
 	rootFlags.IntVar(&initCfg.WebServePort, "web-port", 3579, "Port to serve frontend page on")
 	rootFlags.IntVar(&initCfg.ModelUpdateFrequency, "update-frequency", 60, "Times per second the live VRM model data is sent to each client")
-	rootFlags.StringVar(&initCfg.RuntimeCfgFile, "runtime-cfg", runtimeCfgFile, "Path to config file for storing and retrieving runtime data, like camera state")
+	rootFlags.StringVar(&initCfg.SceneCfgFile, "scene-cfg", sceneCfgFile, "Path to config file for storing and retrieving scene data, like camera state")
 	rootFlags.StringVar(&initCfg.VRMFile, "vrm-file", vrmFile, "Path to VRM file to load on startup and overwrite")
 
 	return rootCmd

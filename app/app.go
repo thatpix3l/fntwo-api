@@ -37,9 +37,9 @@ import (
 )
 
 var (
-	liveVRM    = obj.VRM{}     // VRM transformation data, updated from sources
-	initCfg    *cfg.Initial    // Initial config for settings of the app
-	runtimeCfg = cfg.Runtime{} // Runtime config for various live data
+	liveVRM  = obj.VRM{}   // VRM transformation data, updated from sources
+	initCfg  *cfg.Initial  // Initial config for settings of the app
+	sceneCfg = cfg.Scene{} // Scene config for various live data
 )
 
 type websocketPool struct {
@@ -64,8 +64,8 @@ func newPool() websocketPool {
 // Relay the given camera data to the broadcasting channel, which will eventually propagate to all other clients
 func (p websocketPool) send(msg obj.Camera) {
 
-	// Store copy of the camera data into the runtime config
-	runtimeCfg.Camera = obj.Camera{
+	// Store copy of the camera data
+	sceneCfg.Camera = obj.Camera{
 		GazeTowards: obj.Position{
 			X: msg.GazeTowards.X,
 			Y: msg.GazeTowards.Y,
@@ -134,8 +134,8 @@ func (p websocketPool) start() {
 // Simultaneously, relay from backend to frontend if new camera data has been updated from other clients
 func (p websocketPool) listen(id string, ws *websocket.Conn) {
 
-	// On first time connect, send to client the runtime config of the data
-	ws.WriteJSON(runtimeCfg.Camera)
+	// On first time connect, send to client the scene config
+	ws.WriteJSON(sceneCfg.Camera)
 
 	// Background listen for broadcast messages from channel with this ID
 	go func() {
@@ -325,17 +325,17 @@ func wsUpgrade(w http.ResponseWriter, r *http.Request) (*websocket.Conn, error) 
 	return ws, err
 }
 
-// Helper func to load a runtime config file
-func loadRuntimeCfg(runtimeCfgPath string) error {
+// Helper func to load a scene config file
+func loadScene(sceneCfgPath string) error {
 
-	// Read in a runtime JSON config file
-	content, err := os.ReadFile(runtimeCfgPath)
+	// Read in a scene JSON config file
+	content, err := os.ReadFile(sceneCfgPath)
 	if err != nil {
 		return err
 	}
 
-	// Unmarshal into memory's runtime config
-	if err := json.Unmarshal(content, &runtimeCfg); err != nil {
+	// Unmarshal into memory's scene config
+	if err := json.Unmarshal(content, &sceneCfg); err != nil {
 		return err
 	}
 
@@ -359,8 +359,8 @@ func Start(initialConfig *cfg.Initial) {
 	// Store pointer of generated config file to use throughout this program
 	initCfg = initialConfig
 
-	// Load runtime config from disk, if it even exists
-	if err := loadRuntimeCfg(initialConfig.RuntimeCfgFile); err != nil {
+	// Load scene config from disk, if it even exists
+	if err := loadScene(initialConfig.SceneCfgFile); err != nil {
 		log.Println(err)
 	}
 
@@ -456,23 +456,23 @@ func Start(initialConfig *cfg.Initial) {
 
 	}).Methods("PUT", "OPTIONS")
 
-	// HTTP PUT request route for saving the internal state of the runtime config
-	router.HandleFunc("/api/runtimeConfig", func(w http.ResponseWriter, r *http.Request) {
+	// HTTP PUT request route for saving the internal state of the scene config
+	router.HandleFunc("/api/scene", func(w http.ResponseWriter, r *http.Request) {
 
-		log.Print("Received request to save current runtime config")
+		log.Print("Received request to save current scene")
 
 		// Access control
 		allowHTTPAllPerms(&w)
 
-		// Convert the runtime config in memory into bytes
-		runtimeCfgBytes, err := json.MarshalIndent(runtimeCfg, "", " ")
+		// Convert the scene config in memory into bytes
+		sceneCfgBytes, err := json.MarshalIndent(sceneCfg, "", " ")
 		if err != nil {
 			log.Print(err)
 			return
 		}
 
 		// Store config bytes into file
-		if err := os.WriteFile(initialConfig.RuntimeCfgFile, runtimeCfgBytes, 0644); err != nil {
+		if err := os.WriteFile(initialConfig.SceneCfgFile, sceneCfgBytes, 0644); err != nil {
 			log.Print(err)
 			return
 		}
