@@ -121,7 +121,6 @@ func (p websocketPool) start() {
 
 	for {
 		msg := <-p.BroadcastChannel
-		log.Print("Received message from broadcasting channel")
 		for _, client := range p.Clients {
 			log.Printf("Updating client %s", client.ID)
 			client.Channel <- msg
@@ -353,14 +352,77 @@ func allowHTTPAllPerms(wPtr *http.ResponseWriter) {
 
 }
 
+func saveScene(scene config.Scene) error {
+
+	// Convert the scene config in memory into bytes
+	sceneCfgBytes, err := json.MarshalIndent(scene, "", " ")
+	if err != nil {
+		return err
+	}
+
+	// Store config bytes into file
+	if err := os.WriteFile(appCfg.SceneFilePath, sceneCfgBytes, 0644); err != nil {
+		return err
+	}
+
+	return nil
+
+}
+
+// Attempt to create a new, default scene if no scene already exists
+func saveDefaultScene() error {
+
+	// Open and create scene file
+	sceneFile, err := os.OpenFile(appCfg.SceneFilePath, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0644)
+	if err != nil {
+		return err
+	}
+	defer sceneFile.Close()
+
+	// Create the scene that will be used as the default
+	defaultScene := config.Scene{
+		Camera: obj.Camera{
+			GazeTowards: obj.Position{
+				X: 0,
+				Y: 0,
+				Z: 0,
+			},
+			GazeFrom: obj.Position{
+				X: 3,
+				Y: 3,
+				Z: 3,
+			},
+		},
+	}
+
+	// Marshal defaultScene into bytes
+	defautlSceneBytes, err := json.MarshalIndent(defaultScene, "", "    ")
+	if err != nil {
+		return err
+	}
+
+	// Write to file the scene data
+	if _, err := sceneFile.Write(defautlSceneBytes); err != nil {
+		return err
+	}
+
+	return nil
+
+}
+
 // Entrypoint
 func Start(initialConfig *config.App) {
 
 	// Store pointer of generated config file to use throughout this program
 	appCfg = initialConfig
 
-	// Load scene config from disk, if it even exists
-	if err := loadScene(appCfg.SceneCfgFile); err != nil {
+	// If needed, create a default scene file
+	if err := saveDefaultScene(); err != nil {
+		log.Print(err)
+	}
+
+	// Load scene config from disk
+	if err := loadScene(appCfg.SceneFilePath); err != nil {
 		log.Println(err)
 	}
 
@@ -430,9 +492,9 @@ func Start(initialConfig *config.App) {
 		allowHTTPAllPerms(&w)
 
 		// Serve default VRM file
-		http.ServeFile(w, r, appCfg.VRMFile)
+		http.ServeFile(w, r, appCfg.VRMFilePath)
 
-	}).Methods("GET")
+	}).Methods("GET", "OPTIONS")
 
 	// Route for setting the default VRM model
 	router.HandleFunc("/api/model", func(w http.ResponseWriter, r *http.Request) {
@@ -442,7 +504,7 @@ func Start(initialConfig *config.App) {
 		allowHTTPAllPerms(&w)
 
 		// Destination VRM file on system
-		dest, err := os.Create(appCfg.VRMFile)
+		dest, err := os.Create(appCfg.VRMFilePath)
 		if err != nil {
 			log.Println(err)
 			return
@@ -464,20 +526,12 @@ func Start(initialConfig *config.App) {
 		// Access control
 		allowHTTPAllPerms(&w)
 
-		// Convert the scene config in memory into bytes
-		sceneCfgBytes, err := json.MarshalIndent(sceneCfg, "", " ")
-		if err != nil {
+		if err := saveScene(sceneCfg); err != nil {
 			log.Print(err)
 			return
 		}
 
-		// Store config bytes into file
-		if err := os.WriteFile(appCfg.SceneCfgFile, sceneCfgBytes, 0644); err != nil {
-			log.Print(err)
-			return
-		}
-
-	}).Methods("PUT")
+	}).Methods("PUT", "OPTIONS")
 
 	// HTTP route for retrieving the initial config for the server
 	router.HandleFunc("/api/config/app", func(w http.ResponseWriter, r *http.Request) {
@@ -498,7 +552,7 @@ func Start(initialConfig *config.App) {
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(initCfgBytes)
 
-	}).Methods("GET")
+	}).Methods("GET", "OPTIONS")
 
 	// All other requests are sent to the embedded web frontend
 	frontendRoot, err := frontend.FS()
