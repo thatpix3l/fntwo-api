@@ -30,6 +30,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/thatpix3l/fntwo/app"
 	"github.com/thatpix3l/fntwo/config"
+	"github.com/thatpix3l/fntwo/version"
 )
 
 var (
@@ -118,9 +119,10 @@ func newRootCommand() *cobra.Command {
 
 	// Base command of actual program
 	rootCmd := &cobra.Command{
-		Use:   appName,
-		Short: `Function Two`,
-		Long:  `An easy to use tool for loading, configuring and displaying your VTuber models`,
+		Use:     appName,
+		Short:   `Function Two`,
+		Long:    `An easy to use tool for loading, configuring and displaying your VTuber models`,
+		Version: version.Text,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 
 			// Load and merge config from different sources, based on command flags
