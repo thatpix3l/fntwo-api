@@ -19,6 +19,9 @@ package main
 
 import "github.com/thatpix3l/fntwo/cmd"
 
+// Useful shortcut to automatically build the frontend with "go generate"
+//go:generate npm --prefix frontend/static run build
+
 func main() {
 	cmd.Start()
 }
