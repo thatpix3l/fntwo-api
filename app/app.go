@@ -457,7 +457,7 @@ func Start(initialConfig *config.App) {
 	}).Methods("PUT", "OPTIONS")
 
 	// HTTP PUT request route for saving the internal state of the scene config
-	router.HandleFunc("/api/scene", func(w http.ResponseWriter, r *http.Request) {
+	router.HandleFunc("/api/config/scene", func(w http.ResponseWriter, r *http.Request) {
 
 		log.Print("Received request to save current scene")
 
@@ -480,7 +480,7 @@ func Start(initialConfig *config.App) {
 	}).Methods("PUT")
 
 	// HTTP route for retrieving the initial config for the server
-	router.HandleFunc("/api/initialConfig", func(w http.ResponseWriter, r *http.Request) {
+	router.HandleFunc("/api/config/app", func(w http.ResponseWriter, r *http.Request) {
 
 		log.Println("Received request to retrieve initial config")
 
