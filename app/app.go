@@ -343,23 +343,6 @@ func loadRuntimeCfg(runtimeCfgPath string) error {
 
 }
 
-func saveRuntimeCfg(runtimeCfgPath string) error {
-
-	// Convert the runtime config in memory into bytes
-	file, err := json.MarshalIndent(&runtimeCfg, "", " ")
-	if err != nil {
-		return err
-	}
-
-	// Store config bytes into file
-	if err := os.WriteFile(initCfg.RuntimeCfgFile, file, 0644); err != nil {
-		return err
-	}
-
-	return nil
-
-}
-
 // Helper func to allow all origin, headers, and methods for HTTP requests.
 func allowHTTPAllPerms(wPtr *http.ResponseWriter) {
 
@@ -476,14 +459,22 @@ func Start(initialConfig *cfg.Initial) {
 	// HTTP PUT request route for saving the internal state of the runtime config
 	router.HandleFunc("/api/runtimeConfig", func(w http.ResponseWriter, r *http.Request) {
 
-		log.Println("Received request to save current runtime config")
+		log.Print("Received request to save current runtime config")
 
 		// Access control
 		allowHTTPAllPerms(&w)
 
-		// Save the internal state of the runtime config
-		if err := saveRuntimeCfg(initialConfig.RuntimeCfgFile); err != nil {
-			log.Println(err)
+		// Convert the runtime config in memory into bytes
+		runtimeCfgBytes, err := json.MarshalIndent(runtimeCfg, "", " ")
+		if err != nil {
+			log.Print(err)
+			return
+		}
+
+		// Store config bytes into file
+		if err := os.WriteFile(initialConfig.RuntimeCfgFile, runtimeCfgBytes, 0644); err != nil {
+			log.Print(err)
+			return
 		}
 
 	}).Methods("PUT")
