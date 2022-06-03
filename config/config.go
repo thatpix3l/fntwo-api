@@ -15,7 +15,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-package cfg
+package config
 
 import (
 	"strconv"
@@ -23,29 +23,30 @@ import (
 	"github.com/thatpix3l/fntwo/obj"
 )
 
-// Config used during the start of the program
-type Initial struct {
+// Config used during the start of the application
+type App struct {
 	VmcListenIP          string `json:"vmc_listen_ip"`          // IP address to listen for VMC data
 	VmcListenPort        int    `json:"vmc_listen_port"`        // Port to listen for VMC data
 	WebServeIP           string `json:"web_listen_ip"`          // IP address to serve the frontend
 	WebServePort         int    `json:"web_listen_port"`        // Port to serve the frontend
 	ModelUpdateFrequency int    `json:"model_update_frequency"` // Times per second model transformation is sent to clients
 	SceneCfgFile         string `json:"scene_config_file"`      // Path to scene config file
-	InitialCfgFile       string `json:"initial_config_file"`    // Path to initial config file
+	AppCfgFile           string `json:"app_config_file"`        // Path to app config file
 	VRMFile              string `json:"vrm_file"`               // Path to VRM that will be loaded and overwritten
 }
 
-// Config used for the looks and appearance when viewing models
+// Config used for the looks and appearance of the model viewer.
+// This is what most people will care about.
 type Scene struct {
 	Camera obj.Camera `json:"camera"`
 }
 
 // Get the combined string of VMCListenIP and VMCListenPort
-func (initCfg Initial) GetVmcServerAddress() string {
-	return initCfg.VmcListenIP + ":" + strconv.Itoa(initCfg.VmcListenPort)
+func (appCfg App) GetVmcServerAddress() string {
+	return appCfg.VmcListenIP + ":" + strconv.Itoa(appCfg.VmcListenPort)
 }
 
 // Get the combined string of WebServeIP and WebServePort
-func (initCfg Initial) GetWebServerAddress() string {
-	return initCfg.WebServeIP + ":" + strconv.Itoa(initCfg.WebServePort)
+func (appCfg App) GetWebServerAddress() string {
+	return appCfg.WebServeIP + ":" + strconv.Itoa(appCfg.WebServePort)
 }

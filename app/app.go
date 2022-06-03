@@ -31,15 +31,15 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
 	"github.com/hypebeast/go-osc/osc"
-	"github.com/thatpix3l/fntwo/cfg"
+	"github.com/thatpix3l/fntwo/config"
 	"github.com/thatpix3l/fntwo/frontend"
 	"github.com/thatpix3l/fntwo/obj"
 )
 
 var (
-	liveVRM  = obj.VRM{}   // VRM transformation data, updated from sources
-	initCfg  *cfg.Initial  // Initial config for settings of the app
-	sceneCfg = cfg.Scene{} // Scene config for various live data
+	liveVRM  = obj.VRM{}      // VRM transformation data, updated from sources
+	appCfg   *config.App      // Initial config for settings of the app
+	sceneCfg = config.Scene{} // Scene config for various live data
 )
 
 type websocketPool struct {
@@ -354,18 +354,18 @@ func allowHTTPAllPerms(wPtr *http.ResponseWriter) {
 }
 
 // Entrypoint
-func Start(initialConfig *cfg.Initial) {
+func Start(initialConfig *config.App) {
 
 	// Store pointer of generated config file to use throughout this program
-	initCfg = initialConfig
+	appCfg = initialConfig
 
 	// Load scene config from disk, if it even exists
-	if err := loadScene(initialConfig.SceneCfgFile); err != nil {
+	if err := loadScene(appCfg.SceneCfgFile); err != nil {
 		log.Println(err)
 	}
 
 	// Background listen and serve for face and bone data
-	go listenVMC(initCfg.VmcListenIP, initCfg.VmcListenPort)
+	go listenVMC(appCfg.VmcListenIP, appCfg.VmcListenPort)
 
 	// Create new WebSocket pool, listen in background for messages
 	wsPool := newPool()
@@ -414,7 +414,7 @@ func Start(initialConfig *cfg.Initial) {
 			if err := ws.WriteJSON(liveVRM); err != nil {
 				return
 			}
-			time.Sleep(time.Duration(1e9 / initCfg.ModelUpdateFrequency))
+			time.Sleep(time.Duration(1e9 / appCfg.ModelUpdateFrequency))
 
 		}
 
@@ -430,7 +430,7 @@ func Start(initialConfig *cfg.Initial) {
 		allowHTTPAllPerms(&w)
 
 		// Serve default VRM file
-		http.ServeFile(w, r, initialConfig.VRMFile)
+		http.ServeFile(w, r, appCfg.VRMFile)
 
 	}).Methods("GET")
 
@@ -442,7 +442,7 @@ func Start(initialConfig *cfg.Initial) {
 		allowHTTPAllPerms(&w)
 
 		// Destination VRM file on system
-		dest, err := os.Create(initCfg.VRMFile)
+		dest, err := os.Create(appCfg.VRMFile)
 		if err != nil {
 			log.Println(err)
 			return
@@ -472,7 +472,7 @@ func Start(initialConfig *cfg.Initial) {
 		}
 
 		// Store config bytes into file
-		if err := os.WriteFile(initialConfig.SceneCfgFile, sceneCfgBytes, 0644); err != nil {
+		if err := os.WriteFile(appCfg.SceneCfgFile, sceneCfgBytes, 0644); err != nil {
 			log.Print(err)
 			return
 		}
@@ -488,7 +488,7 @@ func Start(initialConfig *cfg.Initial) {
 		allowHTTPAllPerms(&w)
 
 		// Marshal initial config into bytes
-		initCfgBytes, err := json.Marshal(initCfg)
+		initCfgBytes, err := json.Marshal(appCfg)
 		if err != nil {
 			log.Println(err)
 			return
@@ -508,7 +508,7 @@ func Start(initialConfig *cfg.Initial) {
 	router.PathPrefix("/").Handler(http.FileServer(http.FS(frontendRoot)))
 
 	// Blocking listen and serve for WebSockets and API server
-	log.Printf("Serving frontend and listening for clients/API queries on %s", initCfg.GetWebServerAddress())
-	http.ListenAndServe(initCfg.GetWebServerAddress(), router)
+	log.Printf("Serving frontend and listening for clients/API queries on %s", appCfg.GetWebServerAddress())
+	http.ListenAndServe(appCfg.GetWebServerAddress(), router)
 
 }

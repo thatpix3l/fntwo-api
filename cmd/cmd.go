@@ -29,7 +29,7 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"github.com/thatpix3l/fntwo/app"
-	"github.com/thatpix3l/fntwo/cfg"
+	"github.com/thatpix3l/fntwo/config"
 )
 
 var (
@@ -37,22 +37,22 @@ var (
 	// Neat and tidy according to freedesktop.org's base directory specifications.
 	// Along with whatever Windows does, I guess...
 
-	appName          = "fntwo"                  // Name of program. Duh...
-	envPrefix        = strings.ToUpper(appName) // Prefix for all environment variables used for configuration
-	initCfgNameNoExt = "config"                 // Name of the default config file used, without an extension
+	appName      = "fntwo"                  // Name of program. Duh...
+	envPrefix    = strings.ToUpper(appName) // Prefix for all environment variables used for configuration
+	cfgNameNoExt = "config"                 // Name of the default config file used, without an extension
 
-	initCfgDir       = path.Join(xdg.ConfigHome, appName)      // Default path to config directory
-	initCfgFileNoExt = path.Join(initCfgDir, initCfgNameNoExt) // Default path to config file, without extension
-	sceneDataDir     = path.Join(xdg.DataHome, appName)        // Default path to scene-related data directory
-	sceneCfgFile     = path.Join(sceneDataDir, "scene.json")   // Default path to scene config file, like camera state
-	vrmFile          = path.Join(sceneDataDir, "default.vrm")  // Default path to VRM file that will be loaded and overwritten
+	cfgDir       = path.Join(xdg.ConfigHome, appName) // Default path to config directory
+	cfgFileNoExt = path.Join(cfgDir, cfgNameNoExt)    // Default path to config file, without extension
+	dataDir      = path.Join(xdg.DataHome, appName)   // Default path to data directory
+	sceneFile    = path.Join(dataDir, "scene.json")   // Default path to scene config file, like camera state
+	vrmFile      = path.Join(dataDir, "default.vrm")  // Default path to VRM file that will be loaded and overwritten
 )
 
 // Entrypoint for command line
 func Start() {
 
 	// Create scene config home for data
-	os.MkdirAll(sceneDataDir, 0644)
+	os.MkdirAll(dataDir, 0644)
 
 	// Build out root command
 	cmd := newRootCommand()
@@ -70,10 +70,10 @@ func initializeConfig(cmd *cobra.Command) {
 	v := viper.New()
 
 	// Setting properties of the config file, before reading and processing
-	v.SetConfigName(initCfgNameNoExt) // Default config name, without extension
-	v.AddConfigPath(initCfgDir)       // Path to search for config files
-	v.SetEnvPrefix(envPrefix)         // Prefix for all environment variables
-	v.AutomaticEnv()                  // Auto-check if any config keys match env keys
+	v.SetConfigName(cfgNameNoExt) // Default config name, without extension
+	v.AddConfigPath(cfgDir)       // Path to search for config files
+	v.SetEnvPrefix(envPrefix)     // Prefix for all environment variables
+	v.AutomaticEnv()              // Auto-check if any config keys match env keys
 
 	// If config flag was manually set by the user, set that as the config file to be loaded
 	cfgFlag := cmd.Flag("config")
@@ -118,7 +118,7 @@ func initializeConfig(cmd *cobra.Command) {
 func newRootCommand() *cobra.Command {
 
 	// Config var for app initialization
-	var initCfg cfg.Initial
+	var appCfg config.App
 
 	// Base command of actual program
 	rootCmd := &cobra.Command{
@@ -134,21 +134,21 @@ func newRootCommand() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 
 			// Entrypoint for actual program
-			app.Start(&initCfg)
+			app.Start(&appCfg)
 
 		},
 	}
 
 	// Here, we start defining a load of flags
 	rootFlags := rootCmd.Flags()
-	rootFlags.StringVarP(&initCfg.InitialCfgFile, "config", "c", initCfgFileNoExt+".{json,yaml,toml,ini}", "Path to a config file.")
-	rootFlags.StringVar(&initCfg.VmcListenIP, "vmc-ip", "0.0.0.0", "Address to listen and receive on for VMC motion data")
-	rootFlags.IntVar(&initCfg.VmcListenPort, "vmc-port", 39540, "Port to listen and receive on for VMC motion data")
-	rootFlags.StringVar(&initCfg.WebServeIP, "web-ip", "127.0.0.1", "Address to serve frontend page on")
-	rootFlags.IntVar(&initCfg.WebServePort, "web-port", 3579, "Port to serve frontend page on")
-	rootFlags.IntVar(&initCfg.ModelUpdateFrequency, "update-frequency", 60, "Times per second the live VRM model data is sent to each client")
-	rootFlags.StringVar(&initCfg.SceneCfgFile, "scene-cfg", sceneCfgFile, "Path to config file for storing and retrieving scene data, like camera state")
-	rootFlags.StringVar(&initCfg.VRMFile, "vrm-file", vrmFile, "Path to VRM file to load on startup and overwrite")
+	rootFlags.StringVarP(&appCfg.AppCfgFile, "config", "c", cfgFileNoExt+".{json,yaml,toml,ini}", "Path to a config file.")
+	rootFlags.StringVar(&appCfg.VmcListenIP, "vmc-ip", "0.0.0.0", "Address to listen and receive on for VMC motion data")
+	rootFlags.IntVar(&appCfg.VmcListenPort, "vmc-port", 39540, "Port to listen and receive on for VMC motion data")
+	rootFlags.StringVar(&appCfg.WebServeIP, "web-ip", "127.0.0.1", "Address to serve frontend page on")
+	rootFlags.IntVar(&appCfg.WebServePort, "web-port", 3579, "Port to serve frontend page on")
+	rootFlags.IntVar(&appCfg.ModelUpdateFrequency, "update-frequency", 60, "Times per second the live VRM model data is sent to each client")
+	rootFlags.StringVar(&appCfg.SceneCfgFile, "scene-cfg", sceneFile, "Path to config file for storing and retrieving scene data, like camera state")
+	rootFlags.StringVar(&appCfg.VRMFile, "vrm-file", vrmFile, "Path to VRM file to load on startup and overwrite")
 
 	return rootCmd
 
