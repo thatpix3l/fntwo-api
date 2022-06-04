@@ -22,6 +22,9 @@ import (
 	"io/fs"
 )
 
+//go:generate echo "Pulling frontend dependencies..."
+//go:generate npm --prefix static install
+
 //go:generate echo "Building frontend..."
 //go:generate npm --prefix static run build
 
