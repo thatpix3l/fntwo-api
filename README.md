@@ -15,9 +15,8 @@ Main prequisites:
 
 After the above are installed, run the following:
 ```sh
-git clone github.com/thatpix3l/fntwo
+git clone --recurse-submodules https://github.com/thatpix3l/fntwo.git
 cd fntwo
-git submodule update --init --recursive
 go generate ./...
 go build -o build
 ```
