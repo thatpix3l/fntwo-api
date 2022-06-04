@@ -5,30 +5,26 @@ While existing VTube software for 3D avatars are available, none are as truly cr
 ## Acquire this software...
 
 ### ...by downloading.
-Yeah, no. Compile and run from source, or wait until this message changes :D
+Go to the [releases](https://github.com/thatpix3l/fntwo/releases) page
 
 ### ...by compiling.
-There's actually two things needed to compile: the frontend & backend.
+Main prequisites:
+- git
+- go
+- npm
 
-The frontend is an NPM project, so install Node and NPM, or whatever alternative there is for NPM.
-Then, for the frontend, do:
-```sh
-git clone github.com/thatpix3l/fntwo-frontend
-cd fntwo-frontend
-npm install
-npm run dev
-```
-
-As for the backend:
+After the above are installed, run the following:
 ```sh
 git clone github.com/thatpix3l/fntwo
 cd fntwo
-go mod download
-go run .
+git submodule update --init --recursive
+go generate ./...
+go build -o build
 ```
+The final binary for your platform resides in the project root's `build` folder
 
 ## After starting...
-...open both your desktop browser and the OBS browser source to `127.0.0.1:10001`.
+...open both your desktop browser and the OBS browser source to `127.0.0.1:3579`.
 In the desktop browser, pressing ESCAPE opens the main menu.
 In the main menu, dragging and dropping a `.vrm` file onto the left pane loads the new model.
 Controls are as follows:
