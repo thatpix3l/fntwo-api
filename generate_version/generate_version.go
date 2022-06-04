@@ -15,6 +15,9 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+//go:generate echo "Pulling version info"
+//go:generate go run .
+
 // This is technically a different program altogether, just to pull the version information from the frontend and backend
 package main
 
@@ -40,16 +43,16 @@ func cmdOutput(cmdName string, args ...string) (string, error) {
 func main() {
 
 	// Store frontend's git version
-	frontendVersion, err := cmdOutput("git", "--git-dir=frontend/static/.git", "--work-tree=frontend/static", "describe", "--tags")
+	frontendVersion, err := cmdOutput("git", "--git-dir=../frontend/static/.git", "--work-tree=../frontend/static", "describe", "--tags")
 	if err != nil {
-		log.Fatal(err)
+		log.Print(err)
 	}
 
 	//Store backend's git version
 	backendVersion, err := cmdOutput("git", "describe", "--tags")
 
 	// Write to new version.txt
-	versionFile, err := os.Create("./version/version.txt")
+	versionFile, err := os.Create("../version/version.txt")
 	if err != nil {
 		log.Print(err)
 		return

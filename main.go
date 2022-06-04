@@ -19,18 +19,6 @@ package main
 
 import "github.com/thatpix3l/fntwo/cmd"
 
-// Precompilation steps
-
-//go:generate echo "Compiling frontend..."
-//go:generate npm --prefix frontend/static run build
-
-//go:generate echo "Pulling version information..."
-//go:generate go run generate_version/generate_version.go
-
-//go:generate echo "Compiling final binary..."
-//go:generate go build -o build
-
-// The actual program begins in cmd.Start
 func main() {
 	cmd.Start()
 }
