@@ -33,6 +33,7 @@ func parseBone(msg *osc.Message) ([]float32, error) {
 
 }
 
+// Start listening for VMC messages to modify the VRM data
 func (VMC) Start(liveVRM *obj.VRM, appCfg *config.App) {
 
 	// Listen for face and bone data through OSC from a device in the VMC protocol format
