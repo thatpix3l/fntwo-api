@@ -14,21 +14,26 @@ import (
 )
 
 var (
-	tracker config.MotionReceiver
+	fm3dReceiver config.MotionReceiver
 )
 
 func extractFrame(rawStr string) string {
 
-	matchSingleFrame := regexp.MustCompile("___FACEMOTION3D(.*)__FACEMOTION3D")
-	singleFrame := matchSingleFrame.FindString(rawStr)
-	return singleFrame
+	matchFrame := regexp.MustCompile("___FACEMOTION3D(.*)___FACEMOTION3D")
+	frameMatches := matchFrame.FindStringSubmatch(rawStr)
+	if len(frameMatches) == 0 {
+		return ""
+	}
+
+	return strings.ReplaceAll(frameMatches[1], "___FACEMOTION3D", "")
 
 }
 
-func parseFrame(frameStr string) map[string]float32 {
+func parseFrame(frameStr string) (map[string]float32, map[string]obj.Bone) {
 
-	// Face blend shape keys with associated float values
+	// Face and bone blend shape keys with associated float values
 	newBlendShapes := make(map[string]float32)
+	newBones := make(map[string]obj.Bone)
 
 	payload := strings.Split(frameStr, "|")
 	for _, val := range payload {
@@ -38,6 +43,11 @@ func parseFrame(frameStr string) map[string]float32 {
 
 			// Skip Facemotion3D-specific blend shapes
 			if strings.Contains(val, "FM_") {
+				continue
+			}
+
+			// Skip empty keys
+			if val == "" {
 				continue
 			}
 
@@ -61,9 +71,44 @@ func parseFrame(frameStr string) map[string]float32 {
 
 		}
 
+		// If we're working with a bone
+		if strings.Contains(val, "#") {
+
+			// The name and values are separated by a single "#"
+			keyVal := strings.Split(val, "#")
+
+			// Remove "=" char in key, convert from camelCase to PascalCase
+			boneKey := strings.ReplaceAll(keyVal[0], "=", "")
+			boneKey = strings.ToUpper(boneKey[0:1]) + boneKey[1:]
+
+			// For each value for the current bone, convert it from a string to a float and store it in boneValues
+			var boneValues []float32
+			for _, v := range strings.Split(keyVal[1], ",") {
+
+				rawFloat, err := strconv.ParseFloat(v, 32)
+				if err != nil {
+					log.Print(err)
+					continue
+				}
+
+				boneValues = append(boneValues, float32(rawFloat))
+
+			}
+
+			newBones[boneKey] = obj.Bone{
+				Rotation: obj.QuaternionRotation{
+					X: boneValues[0],
+					Y: boneValues[1],
+					Z: boneValues[2],
+					W: 1,
+				},
+			}
+
+		}
+
 	}
 
-	return newBlendShapes
+	return newBlendShapes, newBones
 
 }
 
@@ -117,18 +162,36 @@ func listenTCP() {
 				continue
 			}
 
-			// Parse the frame of data into JSON bytes
-			blendBuf, err := json.Marshal(parseFrame(latestFrame))
+			// Parse the frame of data
+			blendShapesMap, bonesMap := parseFrame(latestFrame)
+
+			// Convert the blend shapes map into JSON bytes
+			blendBuf, err := json.Marshal(blendShapesMap)
 			if err != nil {
 				log.Print(err)
 				continue
 			}
 
-			// Unmarshal the data into the VRM face
-			if err := json.Unmarshal(blendBuf, &tracker.VRM.BlendShapes.Face); err != nil {
+			// Convert the bones map into JSON bytes
+			boneBuf, err := json.Marshal(bonesMap)
+			if err != nil {
 				log.Print(err)
 				continue
 			}
+
+			// Unmarshal the blend shape bytes into the VRM
+			if err := json.Unmarshal(blendBuf, &fm3dReceiver.VRM.BlendShapes.Face); err != nil {
+				log.Print(err)
+				continue
+			}
+
+			// Unmarshal the bones bytes into the VRM
+			if err := json.Unmarshal(boneBuf, &fm3dReceiver.VRM.Bones); err != nil {
+				log.Print(err)
+				continue
+			}
+
+			log.Print(fm3dReceiver.VRM.Bones.Head.Rotation.X)
 
 			// Prune the frame of data that we just worked on, so we do not work with it on next iteration
 			liveFrames = strings.ReplaceAll(liveFrames, latestFrame, "")
@@ -143,12 +206,12 @@ func listenTCP() {
 // Uses the Facemotion3D app for face data. Internally, TCP is used to communicate with a device.
 func New(vrmPtr *obj.VRM, appCfgPtr *config.App) config.MotionReceiver {
 
-	tracker = config.MotionReceiver{
+	fm3dReceiver = config.MotionReceiver{
 		VRM:    vrmPtr,
 		AppCfg: appCfgPtr,
 		Start:  listenTCP,
 	}
 
-	return tracker
+	return fm3dReceiver
 
 }
