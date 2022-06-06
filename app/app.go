@@ -28,6 +28,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
+	"github.com/thatpix3l/fntwo/app/trackers/facemotion3d"
 	"github.com/thatpix3l/fntwo/app/trackers/virtualmotioncapture"
 	"github.com/thatpix3l/fntwo/config"
 	"github.com/thatpix3l/fntwo/frontend"
@@ -294,7 +295,9 @@ func Start(initialConfig *config.App) {
 
 	// Background listen and serve for face and bone tracking
 	vmcServer := virtualmotioncapture.New(&liveVRM, appCfg)
+	fm3dServer := facemotion3d.New(&liveVRM, appCfg)
 	go vmcServer.Start()
+	go fm3dServer.Start()
 
 	// Create new WebSocket pool, listen in background for messages
 	wsPool := newPool()
