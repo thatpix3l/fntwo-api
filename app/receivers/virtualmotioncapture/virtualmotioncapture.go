@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	tracker config.MotionReceiver
+	vmcReceiver config.MotionReceiver
 )
 
 // Assuming everything after the first index is bone data, type assert it as a slice of float32
@@ -38,7 +38,7 @@ func parseBone(msg *osc.Message) ([]float32, error) {
 func listenVMC() {
 
 	// Listen for face and bone data through OSC from a device in the VMC protocol format
-	log.Printf("Listening for VMC model transformation data on %s", tracker.AppCfg.GetVmcServerAddress())
+	log.Printf("Listening for VMC model transformation data on %s", vmcReceiver.AppCfg.GetVmcServerAddress())
 
 	d := osc.NewStandardDispatcher()
 
@@ -77,7 +77,7 @@ func listenVMC() {
 			return
 		}
 
-		if err := json.Unmarshal(mapBytes, &tracker.VRM.BlendShapes.Face); err != nil {
+		if err := json.Unmarshal(mapBytes, &vmcReceiver.VRM.BlendShapes.Face); err != nil {
 			return
 		}
 
@@ -116,7 +116,7 @@ func listenVMC() {
 			},
 		}
 
-		// The the bone with the name from the OSC message will have this new bone data
+		// The bone with the name from the OSC message will have this new bone data
 		newBoneMap[key] = newBone
 
 		// Marshal our map representation into bytes
@@ -128,7 +128,7 @@ func listenVMC() {
 		}
 
 		// Finally, unmarshal the JSON representation of our bones into the bones section of our VRM
-		if err := json.Unmarshal(newBoneBytes, &tracker.VRM.Bones); err != nil {
+		if err := json.Unmarshal(newBoneBytes, &vmcReceiver.VRM.Bones); err != nil {
 			log.Println(err)
 			return
 		}
@@ -136,7 +136,7 @@ func listenVMC() {
 	})
 
 	// OSC server configuration
-	addr := tracker.AppCfg.GetVmcServerAddress()
+	addr := vmcReceiver.AppCfg.GetVmcServerAddress()
 	server := &osc.Server{
 		Addr:       addr,
 		Dispatcher: d,
@@ -151,12 +151,12 @@ func listenVMC() {
 // Internally, uses OSC messaging, which in turn uses UDP for low-latency motion parsing
 func New(vrmPtr *obj.VRM, appCfgPtr *config.App) config.MotionReceiver {
 
-	tracker = config.MotionReceiver{
+	vmcReceiver = config.MotionReceiver{
 		VRM:    vrmPtr,
 		AppCfg: appCfgPtr,
 		Start:  listenVMC,
 	}
 
-	return tracker
+	return vmcReceiver
 
 }

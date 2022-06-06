@@ -55,5 +55,5 @@ func (appCfg App) GetWebServerAddress() string {
 type MotionReceiver struct {
 	VRM    *obj.VRM // Pointer to an existing VRM struct to apply transformation towards
 	AppCfg *App     // Pointer to an existing app config, for reading various settings
-	Start  func()   // Generic function to start a given tracker type. Up to implementation on what's actually called
+	Start  func()   // Generic function to start a given receiver type. Up to implementation on what's actually called
 }
