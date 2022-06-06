@@ -1,4 +1,4 @@
-package tracker
+package virtualmotioncapture
 
 import (
 	"encoding/json"
@@ -10,8 +10,9 @@ import (
 	"github.com/thatpix3l/fntwo/obj"
 )
 
-type VMC struct {
-}
+var (
+	tracker config.MotionReceiver
+)
 
 // Assuming everything after the first index is bone data, type assert it as a slice of float32
 // The positioning of the data is special, where the index is as follows:
@@ -34,10 +35,10 @@ func parseBone(msg *osc.Message) ([]float32, error) {
 }
 
 // Start listening for VMC messages to modify the VRM data
-func (VMC) Start(liveVRM *obj.VRM, appCfg *config.App) {
+func listenVMC() {
 
 	// Listen for face and bone data through OSC from a device in the VMC protocol format
-	log.Printf("Listening for VMC model transformation data on %s", appCfg.GetVmcServerAddress())
+	log.Printf("Listening for VMC model transformation data on %s", tracker.AppCfg.GetVmcServerAddress())
 
 	d := osc.NewStandardDispatcher()
 
@@ -76,7 +77,7 @@ func (VMC) Start(liveVRM *obj.VRM, appCfg *config.App) {
 			return
 		}
 
-		if err := json.Unmarshal(mapBytes, &liveVRM.BlendShapes.Face); err != nil {
+		if err := json.Unmarshal(mapBytes, &tracker.VRM.BlendShapes.Face); err != nil {
 			return
 		}
 
@@ -127,7 +128,7 @@ func (VMC) Start(liveVRM *obj.VRM, appCfg *config.App) {
 		}
 
 		// Finally, unmarshal the JSON representation of our bones into the bones section of our VRM
-		if err := json.Unmarshal(newBoneBytes, &liveVRM.Bones); err != nil {
+		if err := json.Unmarshal(newBoneBytes, &tracker.VRM.Bones); err != nil {
 			log.Println(err)
 			return
 		}
@@ -135,7 +136,7 @@ func (VMC) Start(liveVRM *obj.VRM, appCfg *config.App) {
 	})
 
 	// OSC server configuration
-	addr := appCfg.GetVmcServerAddress()
+	addr := tracker.AppCfg.GetVmcServerAddress()
 	server := &osc.Server{
 		Addr:       addr,
 		Dispatcher: d,
@@ -143,5 +144,19 @@ func (VMC) Start(liveVRM *obj.VRM, appCfg *config.App) {
 
 	// Blocking listen and serve
 	server.ListenAndServe()
+
+}
+
+// Create a new VirtualMotionCapture receiver.
+// Internally, uses OSC messaging, which in turn uses UDP for low-latency motion parsing
+func New(vrmPtr *obj.VRM, appCfgPtr *config.App) config.MotionReceiver {
+
+	tracker = config.MotionReceiver{
+		VRM:    vrmPtr,
+		AppCfg: appCfgPtr,
+		Start:  listenVMC,
+	}
+
+	return tracker
 
 }
