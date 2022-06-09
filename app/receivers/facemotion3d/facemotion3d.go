@@ -122,6 +122,7 @@ func listenTCP() {
 		return
 	}
 	defer motionSrc.Close()
+	fmt.Fprintf(motionSrc, "StopStreaming_FACEMOTION3D")
 	fmt.Fprintf(motionSrc, "FACEMOTION3D_OtherStreaming|protocol=tcp")
 
 	// Listen for new connections
