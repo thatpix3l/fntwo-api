@@ -192,8 +192,6 @@ func listenTCP() {
 				continue
 			}
 
-			log.Print(fm3dReceiver.VRM.Bones.Head.Rotation.X)
-
 			// Prune the frame of data that we just worked on, so we do not work with it on next iteration
 			liveFrames = strings.ReplaceAll(liveFrames, latestFrame, "")
 
