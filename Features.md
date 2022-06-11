@@ -7,5 +7,5 @@
 - [ ] Load default VRM model if changed while running
 - [ ] Pull accurate face tracking
     - [x] Anything that implements VirtualMotionCapture protocol, including iOS apps like Waidayo.
-    - [] Facemotion3D from iOS
-    - [] Desktop/Laptop webcam
+    - [ ] Facemotion3D from iOS
+    - [ ] Desktop/Laptop webcam
