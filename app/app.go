@@ -28,11 +28,11 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
-	"github.com/thatpix3l/fntwo/app/receivers/facemotion3d"
-	"github.com/thatpix3l/fntwo/app/receivers/virtualmotioncapture"
 	"github.com/thatpix3l/fntwo/config"
 	"github.com/thatpix3l/fntwo/frontend"
 	"github.com/thatpix3l/fntwo/obj"
+	"github.com/thatpix3l/fntwo/receivers/facemotion3d"
+	"github.com/thatpix3l/fntwo/receivers/virtualmotioncapture"
 )
 
 var (
