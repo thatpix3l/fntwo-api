@@ -12,6 +12,7 @@ import (
 
 	"github.com/thatpix3l/fntwo/config"
 	"github.com/thatpix3l/fntwo/obj"
+	"github.com/westphae/quaternion"
 )
 
 var (
@@ -96,12 +97,24 @@ func parseFrame(frameStr string) (map[string]float32, map[string]obj.Bone) {
 
 			}
 
+			// The bone rotations are in Euler. Instead, convert it to quaternion for the frontend
+
+			// Divisor for certain bones to rotate normally when sent to the web client
+			var divisor float32
+			if boneKey == "Head" {
+				divisor = 32
+			} else {
+				divisor = 128
+			}
+
+			boneQuat := quaternion.FromEuler(float64(boneValues[0]/divisor), float64(boneValues[1]/divisor), -float64(boneValues[2]/divisor))
+
 			newBones[boneKey] = obj.Bone{
 				Rotation: obj.QuaternionRotation{
-					X: boneValues[0],
-					Y: boneValues[1],
-					Z: boneValues[2],
-					W: 1,
+					X: float32(boneQuat.X),
+					Y: float32(boneQuat.Y),
+					Z: float32(boneQuat.Z),
+					W: float32(boneQuat.W),
 				},
 			}
 
