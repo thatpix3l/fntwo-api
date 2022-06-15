@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/thatpix3l/fntwo/config"
 	"github.com/thatpix3l/fntwo/obj"
@@ -112,18 +113,29 @@ func parseFrame(frameStr string) (map[string]float32, map[string]obj.Bone) {
 
 }
 
-func listenTCP() {
+// Tell a device with address to send the Facemotion3D data through TCP
+func sendThroughTCP(address string) error {
 
-	// Tell a device to send the Facemotion3D data through TCP
-	log.Print("Telling phone to send motion data through TCP")
-	motionSrc, err := net.Dial("udp", "10.0.1.220:49993")
+	conn, err := net.Dial("udp", address)
 	if err != nil {
-		log.Print(err)
-		return
+		return err
 	}
-	defer motionSrc.Close()
-	fmt.Fprintf(motionSrc, "StopStreaming_FACEMOTION3D")
-	fmt.Fprintf(motionSrc, "FACEMOTION3D_OtherStreaming|protocol=tcp")
+	defer conn.Close()
+
+	if _, err := fmt.Fprintf(conn, "StopStreaming_FACEMOTION3D"); err != nil {
+		return err
+	}
+	time.Sleep(time.Second / 2)
+
+	if _, err := fmt.Fprintf(conn, "FACEMOTION3D_OtherStreaming|protocol=tcp"); err != nil {
+		return err
+	}
+
+	return nil
+
+}
+
+func listenTCP() {
 
 	// Listen for new connections
 	listener, err := net.Listen("tcp", ":49986")
@@ -133,9 +145,16 @@ func listenTCP() {
 	}
 	defer listener.Close()
 
-	var liveFrames string
-
 	for {
+
+		log.Print("Telling phone to send motion data through TCP")
+		if err := sendThroughTCP("10.0.1.220:49993"); err != nil {
+
+			log.Print("Facemotion3D source error, waiting 3 seconds")
+			time.Sleep(3 * time.Second)
+			continue
+
+		}
 
 		// Accept new connection
 		log.Print("Waiting for Facemotion3D client")
@@ -144,9 +163,9 @@ func listenTCP() {
 			log.Print(err)
 			return
 		}
-		defer conn.Close()
 		log.Print("Accepted new Facemotion3D client")
 
+		var liveFrames string
 		for {
 
 			// Repeatedly read from connection new face data
@@ -196,6 +215,9 @@ func listenTCP() {
 			liveFrames = strings.ReplaceAll(liveFrames, latestFrame, "")
 
 		}
+
+		log.Print("Facemotion3D source disconnected, waiting 3 seconds")
+		time.Sleep(3 * time.Second)
 
 	}
 
