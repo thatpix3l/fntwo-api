@@ -1,7 +1,6 @@
 package facemotion3d
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"net"
@@ -12,6 +11,7 @@ import (
 
 	"github.com/thatpix3l/fntwo/config"
 	"github.com/thatpix3l/fntwo/obj"
+	"github.com/thatpix3l/fntwo/receivers"
 	"github.com/westphae/quaternion"
 )
 
@@ -198,29 +198,9 @@ func listenTCP() {
 			// Parse the frame of data
 			blendShapesMap, bonesMap := parseFrame(latestFrame)
 
-			// Convert the blend shapes map into JSON bytes
-			blendBuf, err := json.Marshal(blendShapesMap)
-			if err != nil {
-				log.Print(err)
-				continue
-			}
-
-			// Convert the bones map into JSON bytes
-			boneBuf, err := json.Marshal(bonesMap)
-			if err != nil {
-				log.Print(err)
-				continue
-			}
-
-			// Unmarshal the blend shape bytes into the VRM
-			if err := json.Unmarshal(blendBuf, &fm3dReceiver.VRM.BlendShapes.Face); err != nil {
-				log.Print(err)
-				continue
-			}
-
-			// Unmarshal the bones bytes into the VRM
-			if err := json.Unmarshal(boneBuf, &fm3dReceiver.VRM.Bones); err != nil {
-				log.Print(err)
+			// Attempt to update the VRM with the given bone and blendshapes data
+			if err := receivers.UpdateVRM(bonesMap, blendShapesMap, fm3dReceiver.VRM); err != nil {
+				log.Println(err)
 				continue
 			}
 
