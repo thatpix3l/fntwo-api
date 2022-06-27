@@ -91,42 +91,35 @@ func New(appConfigPtr *config.App, sceneCfgPtr *config.Scene, vrmPtr *obj.VRM) *
 		cameraPool.Update(sceneCfg.Camera)
 
 		// Add a new pool client
-		cameraClient := cameraPool.Create()
+		log.Println("Adding new client...")
+		cameraClient := cameraPool.Create(func(relayedData interface{}) {
 
-		// Log count of clients before reading data
-		log.Println("Client count after adding")
-		cameraPool.LogCount()
-
-		go func() {
-			for {
-
-				if err := ws.ReadJSON(&sceneCfg.Camera); err != nil {
-					log.Printf("Error reading WebSocket for client with ID %s", cameraClient.ID)
-					return
-				}
-
-				// Update camera pool with new camera data
-				log.Println("Updating camera data for camera pool...")
-				cameraPool.Update(sceneCfg.Camera)
-
-			}
-		}()
-
-		for {
-
-			// Wait for and read new camera data from client
-
-			var ok bool
-			if sceneCfg.Camera, ok = cameraClient.Read().(obj.Camera); !ok {
-				log.Fatal("Problem with type asserting camera pool data as obj.Camera, exiting...")
+			var ok bool // Boolean for if the pool's relayedData was type asserted as obj.Camera
+			if sceneCfg.Camera, ok = relayedData.(obj.Camera); !ok {
+				log.Fatal("Severe error from type asserting camera pool data as obj.Camera! Exiting...")
 			}
 
 			// Write camera data to connected frontend client
 			if err := ws.WriteJSON(sceneCfg.Camera); err != nil {
-				log.Printf("Deleting dead camera client with ID: %s", cameraClient.ID)
+				log.Println(err)
+			}
+
+		})
+
+		cameraPool.LogCount() // Log count of clients before reading data
+
+		for {
+
+			// Wait for and read new camera data from WebSocket client
+			if err := ws.ReadJSON(&sceneCfg.Camera); err != nil {
+				log.Printf("Error reading WebSocket for client with ID %s, removing dead client...", cameraClient.ID)
 				cameraClient.Delete()
 				break
 			}
+
+			// Update camera pool with new camera data
+			log.Println("Updating camera data for camera pool...")
+			cameraPool.Update(sceneCfg.Camera)
 
 		}
 

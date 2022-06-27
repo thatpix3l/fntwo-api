@@ -12,18 +12,18 @@ type Pool struct {
 }
 
 type Client struct {
-	ID      string
-	channel chan interface{}
-	poolPtr *Pool
+	ID      string                        // Unique client ID
+	process func(relayedData interface{}) // Function to process relayed data from pool's global channel
+	poolPtr *Pool                         // Pointer to an existing pool
 }
 
 // Create client, return reference to it
-func (p Pool) Create() *Client {
+func (p Pool) Create(dataCallback func(relayedData interface{})) *Client {
 
 	clientID := helper.RandomString(8)
 	newClient := Client{
 		ID:      clientID,
-		channel: make(chan interface{}),
+		process: dataCallback,
 		poolPtr: &p,
 	}
 	p.clients[clientID] = newClient
@@ -35,11 +35,6 @@ func (p Pool) Create() *Client {
 // Delete client
 func (c Client) Delete() {
 	delete(c.poolPtr.clients, c.ID)
-}
-
-// Blocking read data from client
-func (c Client) Read() interface{} {
-	return <-c.channel
 }
 
 // Log the amount of clients in pool
@@ -59,9 +54,9 @@ func (p Pool) Listen() {
 		// Wait for and read data from some client
 		data := <-p.globalChannel
 
-		// Relay data to all clients
+		// Relay data to each client's individual function
 		for _, c := range p.clients {
-			c.channel <- data
+			c.process(data)
 		}
 
 	}
