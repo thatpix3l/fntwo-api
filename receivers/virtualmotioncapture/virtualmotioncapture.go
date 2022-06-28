@@ -1,13 +1,13 @@
 package virtualmotioncapture
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 
 	"github.com/hypebeast/go-osc/osc"
 	"github.com/thatpix3l/fntwo/config"
 	"github.com/thatpix3l/fntwo/obj"
+	"github.com/thatpix3l/fntwo/receivers"
 )
 
 var (
@@ -69,17 +69,11 @@ func listenVMC() {
 		}
 
 		// Create map structure, containing a single key with a single value
-		newMap := make(map[string]float32)
-		newMap[key] = blendValue
+		blendShapesMap := make(map[string]float32)
+		blendShapesMap[key] = blendValue
 
-		mapBytes, err := json.Marshal(newMap)
-		if err != nil {
-			return
-		}
-
-		if err := json.Unmarshal(mapBytes, &vmcReceiver.VRM.BlendShapes.Face); err != nil {
-			return
-		}
+		// Update VRM with new blend shape data
+		receivers.UpdateVRM(nil, blendShapesMap, vmcReceiver.VRM)
 
 	})
 
@@ -99,7 +93,7 @@ func listenVMC() {
 		}
 
 		// Map with bone name string keys and obj.Bone values
-		newBoneMap := make(map[string]obj.Bone)
+		bonesMap := make(map[string]obj.Bone)
 
 		// New bone structure
 		newBone := obj.Bone{
@@ -117,21 +111,10 @@ func listenVMC() {
 		}
 
 		// The bone with the name from the OSC message will have this new bone data
-		newBoneMap[key] = newBone
+		bonesMap[key] = newBone
 
-		// Marshal our map representation into bytes
-		newBoneBytes, err := json.Marshal(newBoneMap)
-		if err != nil {
-			log.Println(err)
-			return
-
-		}
-
-		// Finally, unmarshal the JSON representation of our bones into the bones section of our VRM
-		if err := json.Unmarshal(newBoneBytes, &vmcReceiver.VRM.Bones); err != nil {
-			log.Println(err)
-			return
-		}
+		// Update VRM with new blend shape data
+		receivers.UpdateVRM(bonesMap, nil, vmcReceiver.VRM)
 
 	})
 
