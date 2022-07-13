@@ -33,7 +33,7 @@ type App struct {
 	SceneDirPath         string `json:"scene_home"`             // Path to scene directory
 	SceneFilePath        string `json:"scene_config_file"`      // Path to scene config file
 	AppCfgFilePath       string `json:"app_config_file"`        // Path to app config file
-	VRMFilePath          string `json:"vrm_file"`               // Path to VRM that will be loaded and overwritten
+	VRMFilePath          string `json:"vrm_file"`               // Path to VRM file
 }
 
 // Config used for the looks and appearance of the model viewer.
