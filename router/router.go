@@ -91,9 +91,8 @@ func New(appConfigPtr *config.App, sceneCfgPtr *config.Scene, vrmPtr *obj.VRM) *
 
 	router := mux.NewRouter()
 
-	// Create new camera pool, listen in background for messages
+	// Create new camera pool
 	cameraPool := pool.New()
-	go cameraPool.Listen()
 
 	// Route for relaying the internal state of the camera to all clients
 	router.HandleFunc("/client/camera", func(w http.ResponseWriter, r *http.Request) {

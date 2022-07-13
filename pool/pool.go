@@ -61,21 +61,8 @@ func (p Pool) LogCount() {
 
 // Update pool of clients with the given data
 func (p Pool) Update(data interface{}) {
-	p.globalChannel <- data
-}
-
-// Blocking loop read data from pool and relay it to all clients
-func (p Pool) Listen() {
-	for {
-
-		// Wait for and read data from some client
-		data := <-p.globalChannel
-
-		// Relay data to each client's individual function
-		for _, c := range p.clients {
-			c.process(data)
-		}
-
+	for _, c := range p.clients {
+		c.process(data)
 	}
 }
 
