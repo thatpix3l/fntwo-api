@@ -114,8 +114,10 @@ func initializeConfig(cmd *cobra.Command) {
 // parses them, and finally merges them together
 func newRootCommand() *cobra.Command {
 
-	// Config var for app initialization
-	var appCfg config.App
+	// App config, with a few hardcoded default values
+	var appConfig config.App
+	appConfig.VmcListenAddress.Set("0.0.0.0:39540")
+	appConfig.APIListenAddress.Set("127.0.0.1:3579")
 
 	// Base command of actual program
 	rootCmd := &cobra.Command{
@@ -129,8 +131,8 @@ func newRootCommand() *cobra.Command {
 			initializeConfig(cmd)
 
 			// Set values of app config keys that are dependent on command flags
-			appCfg.SceneFilePath = path.Join(cmd.Flag("scene-dir").Value.String(), "scene.json")
-			appCfg.VRMFilePath = path.Join(cmd.Flag("scene-dir").Value.String(), "default.vrm")
+			appConfig.SceneFilePath = path.Join(cmd.Flag("scene-dir").Value.String(), "scene.json")
+			appConfig.VRMFilePath = path.Join(cmd.Flag("scene-dir").Value.String(), "default.vrm")
 
 			// Create scene home if not explicitly specified elsewhere
 			if !cmd.Flag("scene-dir").Changed {
@@ -143,20 +145,18 @@ func newRootCommand() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 
 			// Entrypoint for actual program
-			app.Start(&appCfg)
+			app.Start(&appConfig)
 
 		},
 	}
 
 	// Here, we start defining a load of flags
 	rootFlags := rootCmd.Flags()
-	rootFlags.StringVarP(&appCfg.AppCfgFilePath, "config", "c", cfgFileNoExt+".{json,yaml,toml,ini}", "Path to a config file.")
-	rootFlags.StringVar(&appCfg.VmcListenIP, "vmc-ip", "0.0.0.0", "Address to listen on for VMC motion data")
-	rootFlags.IntVar(&appCfg.VmcListenPort, "vmc-port", 39540, "Port to listen on for VMC motion data")
-	rootFlags.StringVar(&appCfg.WebListenIP, "web-ip", "127.0.0.1", "Address to serve frontend and API on")
-	rootFlags.IntVar(&appCfg.WebListenPort, "web-port", 3579, "Port to serve frontend and API on")
-	rootFlags.IntVar(&appCfg.ModelUpdateFrequency, "update-frequency", 60, "Times per second the live VRM model data is sent to each client")
-	rootFlags.StringVar(&appCfg.SceneDirPath, "scene-dir", sceneDir, "Path to scene data home")
+	rootFlags.StringVarP(&appConfig.AppCfgFilePath, "config", "c", cfgFileNoExt+".{json,yaml,toml,ini}", "Path to a config file.")
+	rootFlags.Var(&appConfig.VmcListenAddress, "vmc-address", "Address to listen on for VMC motion data")
+	rootFlags.Var(&appConfig.APIListenAddress, "api-address", "Address to listen on for API queries")
+	rootFlags.IntVar(&appConfig.ModelUpdateFrequency, "update-frequency", 60, "Times per second the live VRM model data is sent to each client")
+	rootFlags.StringVar(&appConfig.SceneDirPath, "scene-dir", sceneDir, "Path to scene data home")
 
 	return rootCmd
 

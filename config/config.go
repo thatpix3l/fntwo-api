@@ -18,42 +18,63 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package config
 
 import (
+	"log"
 	"strconv"
+	"strings"
 
 	"github.com/thatpix3l/fntwo/obj"
 )
 
+type Address string
+
+// Return primitive string type of Address
+func (a *Address) String() string {
+	return string(*a)
+}
+
+// Return just the IP of the full address
+func (a *Address) IP() string {
+	fullAddress := strings.Split(string(*a), ":")
+	return fullAddress[0]
+}
+
+// Return just the Port of the full address
+func (a *Address) Port() int {
+
+	fullAddress := strings.Split(string(*a), ":")
+	port, err := strconv.Atoi(fullAddress[1])
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return port
+
+}
+
+// Setter, mainly used for cobra
+func (a *Address) Set(v string) error {
+	*a = Address(v)
+	return nil
+}
+
+// Retrieve type, mainly used for cobra
+func (a *Address) Type() string {
+	return "address"
+}
+
 // Config used during the start of the application
 type App struct {
-	VmcListenIP          string `json:"vmc_listen_ip"`          // Address interface the VMC server listens on
-	VmcListenPort        int    `json:"vmc_listen_port"`        // Port the VMC server listens on
-	WebListenIP          string `json:"web_listen_ip"`          // Address interface the frontend and API listens on
-	WebListenPort        int    `json:"web_listen_port"`        // Port the frontend and API listens on
-	ModelUpdateFrequency int    `json:"model_update_frequency"` // Times per second model transformation is sent to clients
-	SceneDirPath         string `json:"scene_home"`             // Path to scene directory
-	SceneFilePath        string `json:"scene_config_file"`      // Path to scene config file
-	AppCfgFilePath       string `json:"app_config_file"`        // Path to app config file
-	VRMFilePath          string `json:"vrm_file"`               // Path to VRM file
+	VmcListenAddress     Address `json:"vmc_listen_address"`     // Address interface the VMC server listens on
+	APIListenAddress     Address `json:"api_listen_address"`     // Address interface the API server listens on
+	ModelUpdateFrequency int     `json:"model_update_frequency"` // Times per second the model transformation data is sent to clients
+	SceneDirPath         string  `json:"scene_home"`             // Path to scene directory
+	SceneFilePath        string  `json:"scene_config_file"`      // Path to scene config file
+	AppCfgFilePath       string  `json:"app_config_file"`        // Path to app config file
+	VRMFilePath          string  `json:"vrm_file"`               // Path to VRM file
 }
 
 // Config used for the looks and appearance of the model viewer.
 // This is what most people will care about.
 type Scene struct {
 	Camera obj.Camera `json:"camera"`
-}
-
-// Get the combined string of VMCListenIP and VMCListenPort
-func (appCfg App) GetVmcServerAddress() string {
-	return appCfg.VmcListenIP + ":" + strconv.Itoa(appCfg.VmcListenPort)
-}
-
-// Get the combined string of WebServeIP and WebServePort
-func (appCfg App) GetWebServerAddress() string {
-	return appCfg.WebListenIP + ":" + strconv.Itoa(appCfg.WebListenPort)
-}
-
-type MotionReceiver struct {
-	VRM    *obj.VRM // Pointer to an existing VRM struct to apply transformation towards
-	AppCfg *App     // Pointer to an existing app config, for reading various settings
-	Start  func()   // Generic function to start a given receiver type. Up to implementation on what's actually called
 }

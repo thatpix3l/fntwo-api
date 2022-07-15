@@ -18,6 +18,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 3D-related structures for different objects used throughout both the frontend and backend
 package obj
 
+import (
+	"sync"
+)
+
 // Positioning
 type Position struct {
 	X float32 `json:"x"`
@@ -33,10 +37,10 @@ type QuaternionRotation struct {
 	W float32 `json:"w"`
 }
 
-// Spherical rotation
-type SphericalRotation struct {
-	AzimuthAngle float32 `json:"azimuth"`
-	PolarAngle   float32 `json:"polar"`
+// Properties of a single VRM Bone
+type Bone struct {
+	Position Position           `json:"position"`
+	Rotation QuaternionRotation `json:"rotation"`
 }
 
 // Transformational properties of the ThreeJS camera
@@ -45,136 +49,69 @@ type Camera struct {
 	GazeFrom    Position `json:"gaze_from"`
 }
 
-// Properties that VRM models can have
+// Primitive VRM blend shape value. By default, a float32
+type BlendShape float32
+
+type BlendShapes map[string]BlendShape
+
+type Bones map[string]Bone
+
+// VRM model for 3D-transformation purposes
 type VRM struct {
-	Bones       HumanBodyBones `json:"bones"`                  // All poseable bones, based off of Unity's HumanBodyBones
-	BlendShapes BlendShapes    `json:"blend_shapes,omitempty"` // Updated blend shape data
+	Bones            Bones       `json:"bones"`        // All poseable bones, based off of Unity's HumanBodyBones
+	BlendShapes      BlendShapes `json:"blend_shapes"` // All blend shapes, unique to VRM model
+	bonesMutex       *sync.RWMutex
+	blendShapesMutex *sync.RWMutex
+	readCallback     func(vrm *VRM)
 }
 
-// All available VRM blend shapes
-type BlendShapes struct {
-	Face FaceBlendShapes `json:"face,omitempty"`
+// Create a new VRM object
+func NewVRM() *VRM {
+
+	bones := make(Bones)
+	blendShapes := make(BlendShapes)
+
+	return &VRM{
+		Bones:            bones,
+		BlendShapes:      blendShapes,
+		bonesMutex:       &sync.RWMutex{},
+		blendShapesMutex: &sync.RWMutex{},
+	}
+
 }
 
-// The available face blend shapes to modify, based off of Apple's 52 BlendShape AR-kit spec
-// Some VRM models can miss a few, or even all blend shapes, so it is okay to not send any data if missing
-type FaceBlendShapes struct {
-	EyeBlinkLeft        float32 `json:"EyeBlinkLeft,omitempty"`
-	EyeLookDownLeft     float32 `json:"EyeLookDownLeft,omitempty"`
-	EyeLookInLeft       float32 `json:"EyeLookInLeft,omitempty"`
-	EyeLookOutLeft      float32 `json:"EyeLookOutLeft,omitempty"`
-	EyeLookUpLeft       float32 `json:"EyeLookUpLeft,omitempty"`
-	EyeSquintLeft       float32 `json:"EyeSquintLeft,omitempty"`
-	EyeWideLeft         float32 `json:"EyeWideLeft,omitempty"`
-	EyeBlinkRight       float32 `json:"EyeBlinkRight,omitempty"`
-	EyeLookDownRight    float32 `json:"EyeLookDownRight,omitempty"`
-	EyeLookInRight      float32 `json:"EyeLookInRight,omitempty"`
-	EyeLookOutRight     float32 `json:"EyeLookOutRight,omitempty"`
-	EyeLookUpRight      float32 `json:"EyeLookUpRight,omitempty"`
-	EyeSquintRight      float32 `json:"EyeSquintRight,omitempty"`
-	EyeWideRight        float32 `json:"EyeWideRight,omitempty"`
-	JawForward          float32 `json:"JawForward,omitempty"`
-	JawLeft             float32 `json:"JawLeft,omitempty"`
-	JawRight            float32 `json:"JawRight,omitempty"`
-	JawOpen             float32 `json:"JawOpen,omitempty"`
-	MouthClose          float32 `json:"MouthClose,omitempty"`
-	MouthFunnel         float32 `json:"MouthFunnel,omitempty"`
-	MouthPucker         float32 `json:"MouthPucker,omitempty"`
-	MouthLeft           float32 `json:"MouthLeft,omitempty"`
-	MouthRight          float32 `json:"MouthRight,omitempty"`
-	MouthSmileLeft      float32 `json:"MouthSmileLeft,omitempty"`
-	MouthSmileRight     float32 `json:"MouthSmileRight,omitempty"`
-	MouthFrownLeft      float32 `json:"MouthFrownLeft,omitempty"`
-	MouthFrownRight     float32 `json:"MouthFrownRight,omitempty"`
-	MouthDimpleLeft     float32 `json:"MouthDimpleLeft,omitempty"`
-	MouthDimpleRight    float32 `json:"MouthDimpleRight,omitempty"`
-	MouthStretchLeft    float32 `json:"MouthStretchLeft,omitempty"`
-	MouthStretchRight   float32 `json:"MouthStretchRight,omitempty"`
-	MouthRollLower      float32 `json:"MouthRollLower,omitempty"`
-	MouthRollUpper      float32 `json:"MouthRollUpper,omitempty"`
-	MouthShrugLower     float32 `json:"MouthShrugLower,omitempty"`
-	MouthShrugUpper     float32 `json:"MouthShrugUpper,omitempty"`
-	MouthPressLeft      float32 `json:"MouthPressLeft,omitempty"`
-	MouthPressRight     float32 `json:"MouthPressRight,omitempty"`
-	MouthLowerDownLeft  float32 `json:"MouthLowerDownLeft,omitempty"`
-	MouthLowerDownRight float32 `json:"MouthLowerDownRight,omitempty"`
-	MouthUpperUpLeft    float32 `json:"MouthUpperUpLeft,omitempty"`
-	MouthUpperUpRight   float32 `json:"MouthUpperUpRight,omitempty"`
-	BrowDownLeft        float32 `json:"BrowDownLeft,omitempty"`
-	BrowDownRight       float32 `json:"BrowDownRight,omitempty"`
-	BrowInnerUp         float32 `json:"BrowInnerUp,omitempty"`
-	BrowOuterUpLeft     float32 `json:"BrowOuterUpLeft,omitempty"`
-	BrowOuterUpRight    float32 `json:"BrowOuterUpRight,omitempty"`
-	CheekPuff           float32 `json:"CheekPuff,omitempty"`
-	CheekSquintLeft     float32 `json:"CheekSquintLeft,omitempty"`
-	CheekSquintRight    float32 `json:"CheekSquintRight,omitempty"`
-	NoseSneerLeft       float32 `json:"NoseSneerLeft,omitempty"`
-	NoseSneerRight      float32 `json:"NoseSneerRight,omitempty"`
-	TongueOut           float32 `json:"TongueOut,omitempty"`
+// Run a function to safely read VRM data
+func (v *VRM) Read(callback func(vrm *VRM)) {
+
+	// Lock VRM for safe reading
+	v.bonesMutex.RLock()
+	v.blendShapesMutex.RLock()
+	defer v.bonesMutex.RUnlock()
+	defer v.blendShapesMutex.RUnlock()
+
+	// Process VRM data
+	callback(v)
+
 }
 
-// Properties of a single VRM Bone
-type Bone struct {
-	Position Position           `json:"position"`
-	Rotation QuaternionRotation `json:"rotation"`
+func (v *VRM) WriteBone(key string, value Bone) {
+
+	// Lock VRM for safe writing
+	v.bonesMutex.Lock()
+	defer v.bonesMutex.Unlock()
+
+	// Modify VRM bones
+	v.Bones[key] = value
+
 }
 
-// All bones used in a VRM model, based off of Unity's HumanBodyBones
-type HumanBodyBones struct {
-	Hips                    Bone `json:"Hips"`
-	LeftUpperLeg            Bone `json:"LeftUpperLeg"`
-	RightUpperLeg           Bone `json:"RightUpperLeg"`
-	LeftLowerLeg            Bone `json:"LeftLowerLeg"`
-	RightLowerLeg           Bone `json:"RightLowerLeg"`
-	LeftFoot                Bone `json:"LeftFoot"`
-	RightFoot               Bone `json:"RightFoot"`
-	Spine                   Bone `json:"Spine"`
-	Chest                   Bone `json:"Chest"`
-	UpperChest              Bone `json:"UpperChest"`
-	Neck                    Bone `json:"Neck"`
-	Head                    Bone `json:"Head"`
-	LeftShoulder            Bone `json:"LeftShoulder"`
-	RightShoulder           Bone `json:"RightShoulder"`
-	LeftUpperArm            Bone `json:"LeftUpperArm"`
-	RightUpperArm           Bone `json:"RightUpperArm"`
-	LeftLowerArm            Bone `json:"LeftLowerArm"`
-	RightLowerArm           Bone `json:"RightLowerArm"`
-	LeftHand                Bone `json:"LeftHand"`
-	RightHand               Bone `json:"RightHand"`
-	LeftToes                Bone `json:"LeftToes"`
-	RightToes               Bone `json:"RightToes"`
-	LeftEye                 Bone `json:"LeftEye"`
-	RightEye                Bone `json:"RightEye"`
-	Jaw                     Bone `json:"Jaw"`
-	LeftThumbProximal       Bone `json:"LeftThumbProximal"`
-	LeftThumbIntermediate   Bone `json:"LeftThumbIntermediate"`
-	LeftThumbDistal         Bone `json:"LeftThumbDistal"`
-	LeftIndexProximal       Bone `json:"LeftIndexProximal"`
-	LeftIndexIntermediate   Bone `json:"LeftIndexIntermediate"`
-	LeftIndexDistal         Bone `json:"LeftIndexDistal"`
-	LeftMiddleProximal      Bone `json:"LeftMiddleProximal"`
-	LeftMiddleIntermediate  Bone `json:"LeftMiddleIntermediate"`
-	LeftMiddleDistal        Bone `json:"LeftMiddleDistal"`
-	LeftRingProximal        Bone `json:"LeftRingProximal"`
-	LeftRingIntermediate    Bone `json:"LeftRingIntermediate"`
-	LeftRingDistal          Bone `json:"LeftRingDistal"`
-	LeftLittleProximal      Bone `json:"LeftLittleProximal"`
-	LeftLittleIntermediate  Bone `json:"LeftLittleIntermediate"`
-	LeftLittleDistal        Bone `json:"LeftLittleDistal"`
-	RightThumbProximal      Bone `json:"RightThumbProximal"`
-	RightThumbIntermediate  Bone `json:"RightThumbIntermediate"`
-	RightThumbDistal        Bone `json:"RightThumbDistal"`
-	RightIndexProximal      Bone `json:"RightIndexProximal"`
-	RightIndexIntermediate  Bone `json:"RightIndexIntermediate"`
-	RightIndexDistal        Bone `json:"RightIndexDistal"`
-	RightMiddleProximal     Bone `json:"RightMiddleProximal"`
-	RightMiddleIntermediate Bone `json:"RightMiddleIntermediate"`
-	RightMiddleDistal       Bone `json:"RightMiddleDistal"`
-	RightRingProximal       Bone `json:"RightRingProximal"`
-	RightRingIntermediate   Bone `json:"RightRingIntermediate"`
-	RightRingDistal         Bone `json:"RightRingDistal"`
-	RightLittleProximal     Bone `json:"RightLittleProximal"`
-	RightLittleIntermediate Bone `json:"RightLittleIntermediate"`
-	RightLittleDistal       Bone `json:"RightLittleDistal"`
-	LastBone                Bone `json:"LastBone"`
+func (v *VRM) WriteBlendShape(key string, value BlendShape) {
+
+	// Lock VRM for safe writing
+	v.blendShapesMutex.Lock()
+	defer v.blendShapesMutex.Unlock()
+
+	// Modify VRM blend shapes
+	v.BlendShapes[key] = value
+
 }

@@ -31,12 +31,11 @@ import (
 	"github.com/thatpix3l/fntwo/frontend"
 	"github.com/thatpix3l/fntwo/obj"
 	"github.com/thatpix3l/fntwo/pool"
+	"github.com/thatpix3l/fntwo/receivers"
 )
 
 var (
-	appCfg   *config.App
-	sceneCfg *config.Scene
-	liveVRM  *obj.VRM
+	currentReceiver *receivers.MotionReceiver
 )
 
 // Helper function to upgrade an HTTP connection to WebSockets
@@ -66,7 +65,7 @@ func allowHTTPAllPerms(wPtr *http.ResponseWriter) {
 }
 
 // Save a given scene to the default path
-func saveScene(scene *config.Scene) error {
+func saveScene(scene *config.Scene, sceneFilePath string) error {
 
 	// Convert the scene config in memory into bytes
 	sceneCfgBytes, err := json.MarshalIndent(scene, "", " ")
@@ -75,7 +74,7 @@ func saveScene(scene *config.Scene) error {
 	}
 
 	// Store config bytes into file
-	if err := os.WriteFile(appCfg.SceneFilePath, sceneCfgBytes, 0644); err != nil {
+	if err := os.WriteFile(sceneFilePath, sceneCfgBytes, 0644); err != nil {
 		return err
 	}
 
@@ -83,19 +82,19 @@ func saveScene(scene *config.Scene) error {
 
 }
 
-func New(appConfigPtr *config.App, sceneCfgPtr *config.Scene, vrmPtr *obj.VRM) *mux.Router {
+func New(appCfg *config.App, sceneCfg *config.Scene, motionReceivers ...*receivers.MotionReceiver) *mux.Router {
 
-	appCfg = appConfigPtr
-	sceneCfg = sceneCfgPtr
-	liveVRM = vrmPtr
+	// Set the default motion receiver for reading data from
+	currentReceiver = motionReceivers[0]
 
+	// Router for API and web frontend
 	router := mux.NewRouter()
 
-	// Create new camera pool
-	cameraPool := pool.New()
-
 	// Route for relaying the internal state of the camera to all clients
+	cameraPool := pool.New()
 	router.HandleFunc("/client/camera", func(w http.ResponseWriter, r *http.Request) {
+
+		log.Println("Adding new camera client...")
 
 		// Upgrade GET request to WebSocket
 		ws, err := wsUpgrade(w, r)
@@ -103,11 +102,7 @@ func New(appConfigPtr *config.App, sceneCfgPtr *config.Scene, vrmPtr *obj.VRM) *
 			log.Println(err)
 		}
 
-		// On first-time WebSocket connection, update all existing clients
-		cameraPool.Update(sceneCfg.Camera)
-
-		// Add a new pool client
-		log.Println("Adding new client...")
+		// Add a new camera client
 		cameraClient := cameraPool.Create(func(relayedData interface{}) {
 
 			var ok bool // Boolean for if the pool's relayedData was type asserted as obj.Camera
@@ -122,15 +117,19 @@ func New(appConfigPtr *config.App, sceneCfgPtr *config.Scene, vrmPtr *obj.VRM) *
 
 		})
 
-		cameraPool.LogCount() // Log count of clients before reading data
+		// After initial client creation, immediately update camera pool with
+		cameraPool.Update(sceneCfg.Camera)
 
-		for {
+		cameraPool.LogCount() // Log count of camera clients before reading data
+
+		isDead := false
+		for !isDead {
 
 			// Wait for and read new camera data from WebSocket client
 			if err := ws.ReadJSON(&sceneCfg.Camera); err != nil {
-				log.Printf("Error reading WebSocket for client with ID %s, removing dead client...", cameraClient.ID)
+				log.Printf("Error reading WebSocket client with ID %s, removing dead client...", cameraClient.ID)
 				cameraClient.Delete()
-				break
+				isDead = true
 			}
 
 			// Update camera pool with new camera data
@@ -146,18 +145,26 @@ func New(appConfigPtr *config.App, sceneCfgPtr *config.Scene, vrmPtr *obj.VRM) *
 	// Route for updating VRM model data to all clients
 	router.HandleFunc("/client/model", func(w http.ResponseWriter, r *http.Request) {
 
+		// Upgrade model data client into a WebSocket
 		ws, err := wsUpgrade(w, r)
 		if err != nil {
 			log.Println(err)
 			return
 		}
 
-		// Forever send to client the VRM data
 		for {
 
-			if err := ws.WriteJSON(*liveVRM); err != nil {
-				return
-			}
+			// Process and send the VRM data to WebSocket
+			currentReceiver.VRM.Read(func(vrm *obj.VRM) {
+
+				// Send VRM data to WebSocket client
+				if err := ws.WriteJSON(*vrm); err != nil {
+					return
+				}
+
+			})
+
+			// Wait for whatever how long, per second. By default, 1/60 of a second
 			time.Sleep(time.Duration(1e9 / appCfg.ModelUpdateFrequency))
 
 		}
@@ -208,7 +215,7 @@ func New(appConfigPtr *config.App, sceneCfgPtr *config.Scene, vrmPtr *obj.VRM) *
 		// Access control
 		allowHTTPAllPerms(&w)
 
-		if err := saveScene(sceneCfg); err != nil {
+		if err := saveScene(sceneCfg, appCfg.SceneFilePath); err != nil {
 			log.Println(err)
 			return
 		}

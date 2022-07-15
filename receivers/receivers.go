@@ -18,43 +18,23 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package receivers
 
 import (
-	"encoding/json"
-
+	"github.com/thatpix3l/fntwo/config"
 	"github.com/thatpix3l/fntwo/obj"
 )
 
-// Update an existing VRM model with the given VRM data
-func UpdateVRM(bonesMap map[string]obj.Bone, blendShapesMap map[string]float32, vrmPtr *obj.VRM) error {
+type MotionReceiver struct {
+	AppConfig *config.App // Pointer an existing app config, for reading various settings.
+	VRM       *obj.VRM    // VRM object to transform in 3D space.
+	Start     func()      // Generic function to start a given receiver type. Up to implementation on what's actually called.
+}
 
-	bonesMap["Hips"] = obj.Bone{
-		Rotation: obj.QuaternionRotation{
-			Y: bonesMap["Head"].Rotation.Y,
-			W: 1,
-		},
+// Create a new motion receiver
+func New(appConfig *config.App, start func()) *MotionReceiver {
+
+	return &MotionReceiver{
+		AppConfig: appConfig,
+		VRM:       obj.NewVRM(),
+		Start:     start,
 	}
-
-	// Convert the blend shapes map into JSON bytes
-	blendBuf, err := json.Marshal(blendShapesMap)
-	if err != nil {
-		return err
-	}
-
-	// Convert the bones map into JSON bytes
-	boneBuf, err := json.Marshal(bonesMap)
-	if err != nil {
-		return err
-	}
-
-	// Unmarshal the blend shape bytes into the VRM
-	if err := json.Unmarshal(blendBuf, &vrmPtr.BlendShapes.Face); err != nil {
-		return err
-	}
-
-	// Unmarshal the bones bytes into the VRM
-	if err := json.Unmarshal(boneBuf, &vrmPtr.Bones); err != nil {
-		return err
-	}
-
-	return nil
 
 }

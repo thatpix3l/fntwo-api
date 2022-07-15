@@ -31,11 +31,6 @@ import (
 )
 
 var (
-	liveVRM = &obj.VRM{
-		Bones:       obj.HumanBodyBones{},
-		BlendShapes: obj.BlendShapes{},
-	} // VRM transformation data, updated from sources
-	appCfg   *config.App       // Initial config for settings of the app
 	sceneCfg = &config.Scene{} // Scene config for various live data
 )
 
@@ -58,10 +53,10 @@ func loadScene(sceneCfgPath string) error {
 }
 
 // Attempt to create a new, default scene if no scene already exists
-func saveDefaultScene() error {
+func saveDefaultScene(sceneFilePath string) error {
 
 	// Open and create scene file
-	sceneFile, err := os.OpenFile(appCfg.SceneFilePath, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0644)
+	sceneFile, err := os.OpenFile(sceneFilePath, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0644)
 	if err != nil {
 		return err
 	}
@@ -99,30 +94,27 @@ func saveDefaultScene() error {
 }
 
 // Entrypoint
-func Start(initialConfig *config.App) {
-
-	// Store pointer of generated config file to use throughout this program
-	appCfg = initialConfig
+func Start(appConfig *config.App) {
 
 	// If needed, create a default scene file
-	if err := saveDefaultScene(); err != nil {
+	if err := saveDefaultScene(appConfig.SceneFilePath); err != nil {
 		log.Println(err)
 	}
 
 	// Load scene config from disk
-	if err := loadScene(appCfg.SceneFilePath); err != nil {
+	if err := loadScene(appConfig.SceneFilePath); err != nil {
 		log.Println(err)
 	}
 
 	// Background listen and serve for face and bone tracking
-	vmcServer := virtualmotioncapture.New(liveVRM, appCfg)
-	fm3dServer := facemotion3d.New(liveVRM, appCfg)
+	vmcServer := virtualmotioncapture.New(appConfig)
+	fm3dServer := facemotion3d.New(appConfig)
 	go vmcServer.Start()
 	go fm3dServer.Start()
 
 	// Blocking listen and serve for WebSockets and API server
-	log.Printf("Serving frontend and listening for clients/API queries on %s", appCfg.GetWebServerAddress())
-	routerAPI := router.New(appCfg, sceneCfg, liveVRM)
-	http.ListenAndServe(appCfg.GetWebServerAddress(), routerAPI)
+	log.Printf("Serving API on %s", appConfig.APIListenAddress)
+	routerAPI := router.New(appConfig, sceneCfg, vmcServer, fm3dServer)
+	http.ListenAndServe(string(appConfig.APIListenAddress), routerAPI)
 
 }
