@@ -25,6 +25,7 @@ import (
 
 	"github.com/thatpix3l/fntwo/config"
 	"github.com/thatpix3l/fntwo/obj"
+	"github.com/thatpix3l/fntwo/receivers"
 	"github.com/thatpix3l/fntwo/receivers/facemotion3d"
 	"github.com/thatpix3l/fntwo/receivers/virtualmotioncapture"
 	"github.com/thatpix3l/fntwo/router"
@@ -106,15 +107,14 @@ func Start(appConfig *config.App) {
 		log.Println(err)
 	}
 
-	// Background listen and serve for face and bone tracking
-	vmcServer := virtualmotioncapture.New(appConfig)
-	fm3dServer := facemotion3d.New(appConfig)
-	go vmcServer.Start()
-	go fm3dServer.Start()
+	// Create map of MotionReceiver
+	receiverMap := make(map[string]*receivers.MotionReceiver)
+	receiverMap["VirtualMotionCapture"] = virtualmotioncapture.New(appConfig).Start()
+	receiverMap["Facemotion3D"] = facemotion3d.New(appConfig).Start()
 
 	// Blocking listen and serve for WebSockets and API server
 	log.Printf("Serving API on %s", appConfig.APIListenAddress)
-	routerAPI := router.New(appConfig, sceneCfg, vmcServer, fm3dServer)
+	routerAPI := router.New(appConfig, sceneCfg, receiverMap)
 	http.ListenAndServe(string(appConfig.APIListenAddress), routerAPI)
 
 }

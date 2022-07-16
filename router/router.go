@@ -35,7 +35,7 @@ import (
 )
 
 var (
-	currentReceiver *receivers.MotionReceiver
+	activeReceiver *receivers.MotionReceiver
 )
 
 // Helper function to upgrade an HTTP connection to WebSockets
@@ -82,10 +82,15 @@ func saveScene(scene *config.Scene, sceneFilePath string) error {
 
 }
 
-func New(appCfg *config.App, sceneCfg *config.Scene, motionReceivers ...*receivers.MotionReceiver) *mux.Router {
+func New(appCfg *config.App, sceneCfg *config.Scene, receiverMap map[string]*receivers.MotionReceiver) *mux.Router {
 
-	// Set the default motion receiver for reading data from
-	currentReceiver = motionReceivers[0]
+	// Use the first motion receiver in map
+	for name, receiver := range receiverMap {
+		log.Printf("The active receiver is %s", name)
+		activeReceiver = receiver
+		go activeReceiver.Start()
+		break
+	}
 
 	// Router for API and web frontend
 	router := mux.NewRouter()
@@ -155,7 +160,7 @@ func New(appCfg *config.App, sceneCfg *config.Scene, motionReceivers ...*receive
 		for {
 
 			// Process and send the VRM data to WebSocket
-			currentReceiver.VRM.Read(func(vrm *obj.VRM) {
+			activeReceiver.VRM.Read(func(vrm *obj.VRM) {
 
 				// Send VRM data to WebSocket client
 				if err := ws.WriteJSON(*vrm); err != nil {
@@ -207,7 +212,7 @@ func New(appCfg *config.App, sceneCfg *config.Scene, motionReceivers ...*receive
 
 	}).Methods("PUT", "OPTIONS")
 
-	// HTTP PUT request route for saving the internal state of the scene config
+	// Route for saving the internal state of the scene config
 	router.HandleFunc("/api/config/scene", func(w http.ResponseWriter, r *http.Request) {
 
 		log.Println("Received request to save current scene")
@@ -222,7 +227,7 @@ func New(appCfg *config.App, sceneCfg *config.Scene, motionReceivers ...*receive
 
 	}).Methods("PUT", "OPTIONS")
 
-	// HTTP route for retrieving the initial config for the server
+	// Route for retrieving the initial config for the server
 	router.HandleFunc("/api/config/app", func(w http.ResponseWriter, r *http.Request) {
 
 		log.Println("Received request to retrieve initial config")
@@ -242,6 +247,31 @@ func New(appCfg *config.App, sceneCfg *config.Scene, motionReceivers ...*receive
 		w.Write(initCfgBytes)
 
 	}).Methods("GET", "OPTIONS")
+
+	// Route for changing the active MotionReceiver source used
+	router.HandleFunc("/api/receiver/change", func(w http.ResponseWriter, r *http.Request) {
+
+		log.Println("Received request to change the MotionReceiver source for model")
+
+		// Read in the request body into bytes, cast to string
+		reqBytes, err := io.ReadAll(r.Body)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		suggestedReceiver := string(reqBytes)
+
+		// Error if the suggested receiver does not exist
+		if receiverMap[suggestedReceiver] == nil {
+			log.Printf("\"%s\" does not exist!", suggestedReceiver)
+			return
+		}
+
+		// Switch the active receiver
+		activeReceiver = receiverMap[suggestedReceiver]
+		log.Printf("Successfully changed the active receiver to %s", suggestedReceiver)
+
+	}).Methods("POST", "OPTIONS")
 
 	// All other requests are sent to the embedded web frontend
 	frontendRoot, err := frontend.FS()

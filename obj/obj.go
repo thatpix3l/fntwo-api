@@ -66,14 +66,11 @@ type VRM struct {
 }
 
 // Create a new VRM object
-func NewVRM() *VRM {
+func NewVRM() VRM {
 
-	bones := make(Bones)
-	blendShapes := make(BlendShapes)
-
-	return &VRM{
-		Bones:            bones,
-		BlendShapes:      blendShapes,
+	return VRM{
+		Bones:            make(Bones),
+		BlendShapes:      make(BlendShapes),
 		bonesMutex:       &sync.RWMutex{},
 		blendShapesMutex: &sync.RWMutex{},
 	}
