@@ -172,7 +172,7 @@ func sendThroughTCP(address string) error {
 func listenTCP() {
 
 	// Listen for new connections
-	listener, err := net.Listen("tcp", ":49986")
+	listener, err := net.Listen("tcp", fm3dReceiver.AppConfig.Facemotion3DAddress.String())
 	if err != nil {
 		log.Print(err)
 		return

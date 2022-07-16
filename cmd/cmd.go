@@ -117,6 +117,7 @@ func newRootCommand() *cobra.Command {
 	// App config, with a few hardcoded default values
 	var appConfig config.App
 	appConfig.VmcListenAddress.Set("0.0.0.0:39540")
+	appConfig.Facemotion3DAddress.Set("0.0.0.0:49986")
 	appConfig.APIListenAddress.Set("127.0.0.1:3579")
 
 	// Base command of actual program
@@ -154,6 +155,7 @@ func newRootCommand() *cobra.Command {
 	rootFlags := rootCmd.Flags()
 	rootFlags.StringVarP(&appConfig.AppCfgFilePath, "config", "c", cfgFileNoExt+".{json,yaml,toml,ini}", "Path to a config file.")
 	rootFlags.Var(&appConfig.VmcListenAddress, "vmc-address", "Address to listen on for VMC motion data")
+	rootFlags.Var(&appConfig.Facemotion3DAddress, "fm3d-address", "Address to listen on for Facemotion3D motion data")
 	rootFlags.Var(&appConfig.APIListenAddress, "api-address", "Address to listen on for API queries")
 	rootFlags.IntVar(&appConfig.ModelUpdateFrequency, "update-frequency", 60, "Times per second the live VRM model data is sent to each client")
 	rootFlags.StringVar(&appConfig.SceneDirPath, "scene-dir", sceneDir, "Path to scene data home")
