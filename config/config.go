@@ -19,6 +19,7 @@ package config
 
 import (
 	"log"
+	"reflect"
 	"strconv"
 	"strings"
 
@@ -72,6 +73,13 @@ type App struct {
 	SceneFilePath        string  `json:"scene_file"`             // Path to scene config file
 	AppCfgFilePath       string  `json:"config_file"`            // Path to app config file
 	VRMFilePath          string  `json:"vrm_file"`               // Path to VRM file
+}
+
+// Return the tag of a field, with underscores replaced with dashes
+func (a App) TagWithDashes(name string) string {
+	structField, _ := reflect.TypeOf(a).FieldByName(name)
+	tagData := strings.ReplaceAll(structField.Tag.Get("json"), "_", "-")
+	return tagData
 }
 
 // Config used for the looks and appearance of the model viewer.
