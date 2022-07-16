@@ -113,8 +113,8 @@ func Start(appConfig *config.App) {
 	receiverMap["Facemotion3D"] = facemotion3d.New(appConfig).Start()
 
 	// Blocking listen and serve for WebSockets and API server
-	log.Printf("Serving API on %s", appConfig.APIListenAddress)
+	log.Printf("Serving API on %s", appConfig.APIListen)
 	routerAPI := router.New(appConfig, sceneCfg, receiverMap)
-	http.ListenAndServe(string(appConfig.APIListenAddress), routerAPI)
+	http.ListenAndServe(string(appConfig.APIListen), routerAPI)
 
 }

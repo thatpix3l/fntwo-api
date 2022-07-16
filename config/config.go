@@ -65,9 +65,9 @@ func (a *Address) Type() string {
 
 // Config used during the start of the application
 type App struct {
-	VmcListenAddress     Address `json:"vmc_address"`            // Address interface the VMC server listens on
-	Facemotion3DAddress  Address `json:"facemotion3d_address"`   // Address interface the Facemotion3D server listens on
-	APIListenAddress     Address `json:"api_address"`            // Address interface the API server listens on
+	VMCListen            Address `json:"vmc_listen"`             // Address interface the VMC server listens on
+	FM3DListen           Address `json:"fm3d_listen"`            // Address interface the Facemotion3D server listens on
+	APIListen            Address `json:"api_listen"`             // Address interface the API server listens on
 	ModelUpdateFrequency int     `json:"model_update_frequency"` // Times per second the model transformation data is sent to clients
 	SceneDirPath         string  `json:"scene_home"`             // Path to scene directory
 	SceneFilePath        string  `json:"scene_file"`             // Path to scene config file

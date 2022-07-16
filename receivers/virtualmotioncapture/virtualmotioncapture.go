@@ -60,8 +60,8 @@ func parseBone(msg *osc.Message) ([]float32, error) {
 func listenVMC() {
 
 	// Listen for face and bone data through OSC from a device in the VMC protocol format
-	log.Println(vmcReceiver.AppConfig.APIListenAddress)
-	log.Printf("Listening for VMC model transformation data on %s", vmcReceiver.AppConfig.VmcListenAddress)
+	log.Println(vmcReceiver.AppConfig.APIListen)
+	log.Printf("Listening for VMC model transformation data on %s", vmcReceiver.AppConfig.VMCListen)
 
 	d := osc.NewStandardDispatcher()
 
@@ -134,7 +134,7 @@ func listenVMC() {
 	})
 
 	// OSC server configuration
-	addr := vmcReceiver.AppConfig.VmcListenAddress.String()
+	addr := vmcReceiver.AppConfig.VMCListen.String()
 	server := &osc.Server{
 		Addr:       addr,
 		Dispatcher: d,

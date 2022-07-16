@@ -116,9 +116,9 @@ func newRootCommand() *cobra.Command {
 
 	// App config, with a few hardcoded default values
 	var appConfig config.App
-	appConfig.VmcListenAddress.Set("0.0.0.0:39540")
-	appConfig.Facemotion3DAddress.Set("0.0.0.0:49986")
-	appConfig.APIListenAddress.Set("127.0.0.1:3579")
+	appConfig.VMCListen.Set("0.0.0.0:39540")
+	appConfig.FM3DListen.Set("0.0.0.0:49986")
+	appConfig.APIListen.Set("127.0.0.1:3579")
 
 	// Base command of actual program
 	rootCmd := &cobra.Command{
@@ -154,9 +154,9 @@ func newRootCommand() *cobra.Command {
 	// Here, we start defining a load of flags
 	rootFlags := rootCmd.Flags()
 	rootFlags.StringVarP(&appConfig.AppCfgFilePath, appConfig.TagWithDashes("AppCfgFilePath"), "c", cfgFileNoExt+".{json,yaml,toml,ini}", "Path to a config file.")
-	rootFlags.Var(&appConfig.VmcListenAddress, appConfig.TagWithDashes("VmcListenAddress"), "Address to listen on for VMC motion data")
-	rootFlags.Var(&appConfig.Facemotion3DAddress, appConfig.TagWithDashes("Facemotion3DAddress"), "Address to listen on for Facemotion3D motion data")
-	rootFlags.Var(&appConfig.APIListenAddress, appConfig.TagWithDashes("APIListenAddress"), "Address to listen on for API queries")
+	rootFlags.Var(&appConfig.VMCListen, appConfig.TagWithDashes("VMCListen"), "Address to listen on for VMC motion data")
+	rootFlags.Var(&appConfig.FM3DListen, appConfig.TagWithDashes("FM3DListen"), "Address to listen on for Facemotion3D motion data")
+	rootFlags.Var(&appConfig.APIListen, appConfig.TagWithDashes("APIListen"), "Address to listen on for API queries")
 	rootFlags.IntVar(&appConfig.ModelUpdateFrequency, appConfig.TagWithDashes("ModelUpdateFrequency"), 60, "Times per second the live VRM model data is sent to each client")
 	rootFlags.StringVar(&appConfig.SceneDirPath, appConfig.TagWithDashes("SceneDirPath"), sceneDir, "Path to scene data home")
 
