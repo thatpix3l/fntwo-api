@@ -88,7 +88,6 @@ func New(appCfg *config.App, sceneCfg *config.Scene, receiverMap map[string]*rec
 	for name, receiver := range receiverMap {
 		log.Printf("The active receiver is %s", name)
 		activeReceiver = receiver
-		go activeReceiver.Start()
 		break
 	}
 
