@@ -182,7 +182,7 @@ func listenTCP() {
 	for {
 
 		log.Print("Telling phone to send motion data through TCP")
-		if err := sendThroughTCP("10.0.1.220:49993"); err != nil {
+		if err := sendThroughTCP(fm3dReceiver.AppConfig.FM3DListen.IP() + ":49993"); err != nil {
 
 			log.Print("Facemotion3D source error, waiting 3 seconds")
 			time.Sleep(3 * time.Second)

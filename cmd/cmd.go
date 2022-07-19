@@ -159,6 +159,7 @@ func newRootCommand() *cobra.Command {
 	rootFlags.StringVarP(&appConfig.AppCfgFilePath, appConfig.TagWithDashes("AppCfgFilePath"), "c", cfgFileNoExt+".{json,yaml,toml,ini}", "Path to a config file.")
 	rootFlags.Var(&appConfig.VMCListen, appConfig.TagWithDashes("VMCListen"), "Address to listen on for VMC motion data")
 	rootFlags.Var(&appConfig.FM3DListen, appConfig.TagWithDashes("FM3DListen"), "Address to listen on for Facemotion3D motion data")
+	rootFlags.Var(&appConfig.FM3DDevice, appConfig.TagWithDashes("FM3DDevice"), "IP address of phone/device that is the source of Facemotion3D motion data")
 	rootFlags.Var(&appConfig.APIListen, appConfig.TagWithDashes("APIListen"), "Address to listen on for API queries")
 	rootFlags.IntVar(&appConfig.ModelUpdateFrequency, appConfig.TagWithDashes("ModelUpdateFrequency"), 60, "Times per second the live VRM model data is sent to each client")
 	rootFlags.StringVar(&appConfig.SceneDirPath, appConfig.TagWithDashes("SceneDirPath"), sceneDir, "Path to scene data home")

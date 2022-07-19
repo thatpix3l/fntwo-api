@@ -67,6 +67,7 @@ func (a *Address) Type() string {
 type App struct {
 	VMCListen            Address `json:"vmc_listen"`             // Address interface the VMC server listens on
 	FM3DListen           Address `json:"fm3d_listen"`            // Address interface the Facemotion3D server listens on
+	FM3DDevice           Address `json:"fm3d_device"`            // IP address of phone/device to tell to start sending Facemotion3D data
 	APIListen            Address `json:"api_listen"`             // Address interface the API server listens on
 	ModelUpdateFrequency int     `json:"model_update_frequency"` // Times per second the model transformation data is sent to clients
 	SceneDirPath         string  `json:"scene_home"`             // Path to scene directory
