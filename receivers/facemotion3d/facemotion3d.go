@@ -128,14 +128,18 @@ func parseFrame(frameStr string) {
 				divisor = 128
 			}
 
-			boneQuat := quaternion.FromEuler(float64(boneValues[0]), float64(boneValues[1]), -float64(boneValues[2]))
+			boneQuat := quaternion.FromEuler(
+				float64(boneValues[0]/divisor),
+				float64(boneValues[1]/divisor),
+				-float64(boneValues[2]/divisor),
+			)
 
 			bone := obj.Bone{
 				Rotation: obj.QuaternionRotation{
-					X: float32(boneQuat.X) / divisor,
-					Y: float32(boneQuat.Y) / divisor,
-					Z: float32(boneQuat.Z) / divisor,
-					W: float32(boneQuat.W) / divisor,
+					X: float32(boneQuat.X),
+					Y: float32(boneQuat.Y),
+					Z: float32(boneQuat.Z),
+					W: float32(boneQuat.W),
 				},
 			}
 
@@ -181,8 +185,8 @@ func listenTCP() {
 
 	for {
 
-		log.Print("Telling phone to send motion data through TCP")
-		if err := sendThroughTCP(fm3dReceiver.AppConfig.FM3DListen.IP() + ":49993"); err != nil {
+		log.Printf("Telling device at \"%s\" to send motion Facemotion3D data through TCP", fm3dReceiver.AppConfig.FM3DDevice.IP())
+		if err := sendThroughTCP(fm3dReceiver.AppConfig.FM3DDevice.IP() + ":49993"); err != nil {
 
 			log.Print("Facemotion3D source error, waiting 3 seconds")
 			time.Sleep(3 * time.Second)
