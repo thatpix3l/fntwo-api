@@ -38,6 +38,8 @@ var (
 	// Neat and tidy according to freedesktop.org's base directory specifications.
 	// Along with whatever Windows does, I guess...
 
+	appConfig config.App
+
 	appName      = "fntwo"                  // Name of program. Duh...
 	envPrefix    = strings.ToUpper(appName) // Prefix for all environment variables used for configuration
 	cfgNameNoExt = "config"                 // Name of the default config file used, without an extension
@@ -73,7 +75,8 @@ func initializeConfig(cmd *cobra.Command) {
 	v.AutomaticEnv()              // Auto-check if any config keys match env keys
 
 	// If config flag was manually set by the user, set that as the config file to be loaded
-	cfgFlag := cmd.Flag("config")
+	configFlagName := appConfig.TagWithDashes("AppCfgFilePath")
+	cfgFlag := cmd.Flag(configFlagName)
 	if cfgFlag.Changed {
 		log.Print("Default config file was changed")
 		v.SetConfigFile(cfgFlag.Value.String())
@@ -89,7 +92,7 @@ func initializeConfig(cmd *cobra.Command) {
 	cmdFlags.VisitAll(func(f *pflag.Flag) {
 
 		// Config is a special case. We only want it to be configurable from the command line
-		if f.Name == "config" {
+		if f.Name == configFlagName {
 			return
 		}
 
@@ -115,7 +118,6 @@ func initializeConfig(cmd *cobra.Command) {
 func newRootCommand() *cobra.Command {
 
 	// App config, with a few hardcoded default values
-	var appConfig config.App
 	appConfig.VMCListen.Set("0.0.0.0:39540")
 	appConfig.FM3DListen.Set("0.0.0.0:49986")
 	appConfig.APIListen.Set("127.0.0.1:3579")
@@ -126,24 +128,25 @@ func newRootCommand() *cobra.Command {
 		Short:   `Function Two`,
 		Long:    `An easy to use tool for loading, configuring and displaying your VTuber models`,
 		Version: version.Text,
-		PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		PersistentPreRun: func(cmd *cobra.Command, _ []string) {
 
 			// Load and merge config from different sources, based on command flags
 			initializeConfig(cmd)
 
 			// Set values of app config keys that are dependent on command flags
-			appConfig.SceneFilePath = path.Join(cmd.Flag("scene-dir").Value.String(), "scene.json")
-			appConfig.VRMFilePath = path.Join(cmd.Flag("scene-dir").Value.String(), "default.vrm")
+			sceneDir := appConfig.TagWithDashes("SceneDirPath")
+			appConfig.SceneFilePath = path.Join(cmd.Flag(sceneDir).Value.String(), "scene.json")
+			appConfig.VRMFilePath = path.Join(cmd.Flag(appConfig.TagWithDashes("SceneDirPath")).Value.String(), "default.vrm")
 
 			// Create scene home if not explicitly specified elsewhere
-			if !cmd.Flag("scene-dir").Changed {
-				if err := os.MkdirAll(cmd.Flag("scene-dir").Value.String(), 0755); err != nil {
+			if !cmd.Flag(sceneDir).Changed {
+				if err := os.MkdirAll(cmd.Flag(sceneDir).Value.String(), 0755); err != nil {
 					log.Fatal(err)
 				}
 			}
 
 		},
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(_ *cobra.Command, _ []string) {
 
 			// Entrypoint for actual program
 			app.Start(&appConfig)
