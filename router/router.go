@@ -248,7 +248,7 @@ func New(appCfg *config.App, sceneCfg *config.Scene, receiverMap map[string]*rec
 	}).Methods("GET", "OPTIONS")
 
 	// Route for returning the names of all available MotionReceiver sources
-	router.HandleFunc("api/receiver/list", func(w http.ResponseWriter, r *http.Request) {
+	router.HandleFunc("/api/receiver/list", func(w http.ResponseWriter, r *http.Request) {
 
 		log.Println("Received request to list all available motion receivers")
 		var receiverNames []string
