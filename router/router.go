@@ -291,7 +291,7 @@ func New(appCfg *config.App, sceneCfg *config.Scene, receiverMap map[string]*rec
 		activeReceiver = receiverMap[suggestedReceiver]
 		log.Printf("Successfully changed the active receiver to %s", suggestedReceiver)
 
-	}).Methods("POST", "OPTIONS")
+	}).Methods("PUT", "OPTIONS")
 
 	// All other requests are sent to the embedded web frontend
 	frontendRoot, err := frontend.FS()
