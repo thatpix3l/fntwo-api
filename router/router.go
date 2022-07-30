@@ -26,9 +26,9 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
-	"github.com/gorilla/websocket"
 	"github.com/thatpix3l/fntwo/config"
 	"github.com/thatpix3l/fntwo/frontend"
+	"github.com/thatpix3l/fntwo/helper"
 	"github.com/thatpix3l/fntwo/obj"
 	"github.com/thatpix3l/fntwo/pool"
 	"github.com/thatpix3l/fntwo/receivers"
@@ -37,22 +37,6 @@ import (
 var (
 	activeReceiver *receivers.MotionReceiver
 )
-
-// Helper function to upgrade an HTTP connection to WebSockets
-func wsUpgrade(w http.ResponseWriter, r *http.Request) (*websocket.Conn, error) {
-	var upgrader = websocket.Upgrader{
-		ReadBufferSize:  1024,
-		WriteBufferSize: 1024,
-	}
-
-	upgrader.CheckOrigin = func(r *http.Request) bool { return true }
-	ws, err := upgrader.Upgrade(w, r, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return ws, err
-}
 
 // Helper func to allow all origin, headers, and methods for HTTP requests.
 func allowHTTPAllPerms(wPtr *http.ResponseWriter) {
@@ -101,7 +85,7 @@ func New(appCfg *config.App, sceneCfg *config.Scene, receiverMap map[string]*rec
 		log.Println("Adding new camera client...")
 
 		// Upgrade GET request to WebSocket
-		ws, err := wsUpgrade(w, r)
+		ws, err := helper.WebSocketUpgrade(w, r)
 		if err != nil {
 			log.Println(err)
 		}
@@ -150,7 +134,7 @@ func New(appCfg *config.App, sceneCfg *config.Scene, receiverMap map[string]*rec
 	router.HandleFunc("/client/model", func(w http.ResponseWriter, r *http.Request) {
 
 		// Upgrade model data client into a WebSocket
-		ws, err := wsUpgrade(w, r)
+		ws, err := helper.WebSocketUpgrade(w, r)
 		if err != nil {
 			log.Println(err)
 			return

@@ -27,6 +27,7 @@ import (
 	"github.com/thatpix3l/fntwo/obj"
 	"github.com/thatpix3l/fntwo/receivers"
 	"github.com/thatpix3l/fntwo/receivers/facemotion3d"
+	"github.com/thatpix3l/fntwo/receivers/mediapipeweb"
 	"github.com/thatpix3l/fntwo/receivers/virtualmotioncapture"
 	"github.com/thatpix3l/fntwo/router"
 )
@@ -109,6 +110,8 @@ func Start(appConfig *config.App) {
 
 	// Create map of MotionReceiver
 	receiverMap := make(map[string]*receivers.MotionReceiver)
+
+	receiverMap["MediapipeWeb"] = mediapipeweb.New(appConfig).Start()
 	receiverMap["VirtualMotionCapture"] = virtualmotioncapture.New(appConfig).Start()
 	receiverMap["Facemotion3D"] = facemotion3d.New(appConfig).Start()
 
