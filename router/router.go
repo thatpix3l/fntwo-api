@@ -80,7 +80,7 @@ func New(appCfg *config.App, sceneCfg *config.Scene, receiverMap map[string]*rec
 
 	// Route for relaying the internal state of the camera to all clients
 	cameraPool := pool.New()
-	router.HandleFunc("/client/camera", func(w http.ResponseWriter, r *http.Request) {
+	router.HandleFunc("/live/read/camera", func(w http.ResponseWriter, r *http.Request) {
 
 		log.Println("Adding new camera client...")
 
@@ -91,47 +91,47 @@ func New(appCfg *config.App, sceneCfg *config.Scene, receiverMap map[string]*rec
 		}
 
 		// Add a new camera client
-		cameraClient := cameraPool.Create(func(relayedData interface{}) {
+		cameraPool.Create(func(relayedData interface{}, client *pool.Client) {
 
 			var ok bool // Boolean for if the pool's relayedData was type asserted as obj.Camera
 			if sceneCfg.Camera, ok = relayedData.(obj.Camera); !ok {
-				log.Fatal("Severe error from type asserting camera pool data as obj.Camera! Exiting...")
+				log.Println("Couldn't type assert relayed data as a camera")
+				return
 			}
 
 			// Write camera data to connected frontend client
 			if err := ws.WriteJSON(sceneCfg.Camera); err != nil {
 				log.Println(err)
+				client.Delete()
+				ws.Close()
 			}
 
 		})
 
-		// After initial client creation, immediately update camera pool with
-		cameraPool.Update(sceneCfg.Camera)
+	})
 
-		cameraPool.LogCount() // Log count of camera clients before reading data
+	router.HandleFunc("/live/write/camera", func(w http.ResponseWriter, r *http.Request) {
 
-		isDead := false
-		for !isDead {
+		ws, err := helper.WebSocketUpgrade(w, r)
+		if err != nil {
+			log.Println(err)
+			return
+		}
 
-			// Wait for and read new camera data from WebSocket client
+		for {
+
 			if err := ws.ReadJSON(&sceneCfg.Camera); err != nil {
-				log.Printf("Error reading WebSocket client with ID %s, removing dead client...", cameraClient.ID)
-				cameraClient.Delete()
-				isDead = true
+				return
 			}
 
-			// Update camera pool with new camera data
-			log.Println("Updating camera data for camera pool...")
 			cameraPool.Update(sceneCfg.Camera)
 
 		}
 
-		cameraPool.LogCount() // Log count of clients after reading data
-
 	})
 
 	// Route for updating VRM model data to all clients
-	router.HandleFunc("/client/model", func(w http.ResponseWriter, r *http.Request) {
+	router.HandleFunc("/live/read/model", func(w http.ResponseWriter, r *http.Request) {
 
 		// Upgrade model data client into a WebSocket
 		ws, err := helper.WebSocketUpgrade(w, r)
