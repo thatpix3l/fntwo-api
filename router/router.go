@@ -140,6 +140,11 @@ func New(appCfg *config.App, sceneCfg *config.Scene, receiverMap map[string]*rec
 			return
 		}
 
+		if err := ws.WriteJSON(activeReceiver.VRM); err != nil {
+			log.Println(err)
+			return
+		}
+
 		for {
 
 			// Process and send the VRM data to WebSocket
