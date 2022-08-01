@@ -241,7 +241,7 @@ func New(appCfg *config.App, sceneCfg *config.Scene, receiverMap map[string]*rec
 		allowHTTPAllPerms(&w)
 
 		// Marshal initial config into bytes
-		initCfgBytes, err := json.Marshal(appCfg)
+		appConfigBytes, err := json.Marshal(appCfg)
 		if err != nil {
 			log.Println(err)
 			return
@@ -249,7 +249,7 @@ func New(appCfg *config.App, sceneCfg *config.Scene, receiverMap map[string]*rec
 
 		// Reply back to request with byte-format of initial config
 		w.Header().Set("Content-Type", "application/json")
-		w.Write(initCfgBytes)
+		w.Write(appConfigBytes)
 
 	}).Methods("GET", "OPTIONS")
 
