@@ -215,6 +215,23 @@ func New(appCfg *config.App, sceneCfg *config.Scene, receiverMap map[string]*rec
 
 	}).Methods("PUT", "OPTIONS")
 
+	router.HandleFunc("/api/write/config/scene/get", func(w http.ResponseWriter, r *http.Request) {
+
+		log.Println("Received request to retrieve current state of scene config")
+
+		allowHTTPAllPerms(&w)
+
+		sceneConfigBytes, err := json.Marshal(sceneCfg)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(sceneConfigBytes)
+
+	})
+
 	// Route for retrieving the initial config for the server
 	router.HandleFunc("/api/read/config/app/get", func(w http.ResponseWriter, r *http.Request) {
 
