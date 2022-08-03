@@ -90,6 +90,12 @@ func New(appCfg *config.App, sceneCfg *config.Scene, receiverMap map[string]*rec
 			log.Println(err)
 		}
 
+		// On first-time connect, send the camera state
+		if err := ws.WriteJSON(sceneCfg.Camera); err != nil {
+			log.Println(err)
+			return
+		}
+
 		// Add a new camera client
 		cameraPool.Create(func(relayedData interface{}, client *pool.Client) {
 
