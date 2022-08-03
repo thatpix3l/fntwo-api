@@ -253,6 +253,25 @@ func New(appCfg *config.App, sceneCfg *config.Scene, receiverMap map[string]*rec
 
 	}).Methods("GET", "OPTIONS")
 
+	router.HandleFunc("/api/read/config/scene/get", func(w http.ResponseWriter, r *http.Request) {
+
+		log.Println(`Received read request for scene config`)
+
+		allowHTTPAllPerms(&w)
+
+		//Marshal scene config into bytes
+		sceneConfigBytes, err := json.Marshal(sceneCfg)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+
+		// Reply back to request with byte-format of scene config
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(sceneConfigBytes)
+
+	})
+
 	// Route for returning the names of all available MotionReceiver sources
 	router.HandleFunc("/api/read/receiver/get", func(w http.ResponseWriter, r *http.Request) {
 
