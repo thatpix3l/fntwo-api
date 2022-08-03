@@ -74,6 +74,7 @@ type App struct {
 	SceneFilePath        string  `json:"scene_file"`             // Path to scene config file
 	AppCfgFilePath       string  `json:"config_file"`            // Path to app config file
 	VRMFilePath          string  `json:"vrm_file"`               // Path to VRM file
+	Receiver             string  `json:"receiver"`               // Name of receiver to use on startup
 }
 
 // Return the tag of a field, with underscores replaced with dashes

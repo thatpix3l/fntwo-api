@@ -163,6 +163,7 @@ func newRootCommand() *cobra.Command {
 	rootFlags.Var(&appConfig.APIListen, appConfig.TagWithDashes("APIListen"), "Address to listen on for API queries")
 	rootFlags.IntVar(&appConfig.ModelUpdateFrequency, appConfig.TagWithDashes("ModelUpdateFrequency"), 60, "Times per second the live VRM model data is sent to each client")
 	rootFlags.StringVar(&appConfig.SceneDirPath, appConfig.TagWithDashes("SceneDirPath"), sceneDir, "Path to scene data home")
+	rootFlags.StringVar(&appConfig.Receiver, appConfig.TagWithDashes("receiver"), "VirtualMotionCapture", "Name of a receiver to use as source of motion data")
 
 	return rootCmd
 

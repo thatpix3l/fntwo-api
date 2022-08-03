@@ -313,7 +313,8 @@ func New(appCfg *config.App, sceneCfg *config.Scene, receiverMap map[string]*rec
 		}
 
 		// Switch the active receiver
-		activeReceiver = receiverMap[suggestedReceiver]
+		appCfg.Receiver = suggestedReceiver
+		activeReceiver = receiverMap[appCfg.Receiver]
 		log.Printf("Successfully changed the active receiver to %s", suggestedReceiver)
 
 	}).Methods("PUT", "OPTIONS")
