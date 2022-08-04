@@ -75,11 +75,11 @@ func initializeConfig(cmd *cobra.Command) {
 	v.AutomaticEnv()              // Auto-check if any config keys match env keys
 
 	// If config flag was manually set by the user, set that as the config file to be loaded
-	configFlagName := appConfig.TagWithDashes("AppCfgFilePath")
-	cfgFlag := cmd.Flag(configFlagName)
-	if cfgFlag.Changed {
+	appConfigFlagName := "config-app"
+	appConfigFlag := cmd.Flag(appConfigFlagName)
+	if appConfigFlag.Changed {
 		log.Print("Default config file was changed")
-		v.SetConfigFile(cfgFlag.Value.String())
+		v.SetConfigFile(appConfigFlag.Value.String())
 	}
 
 	// Read in config file
@@ -92,7 +92,7 @@ func initializeConfig(cmd *cobra.Command) {
 	cmdFlags.VisitAll(func(f *pflag.Flag) {
 
 		// Config is a special case. We only want it to be configurable from the command line
-		if f.Name == configFlagName {
+		if f.Name == appConfigFlagName {
 			return
 		}
 
@@ -134,9 +134,9 @@ func newRootCommand() *cobra.Command {
 			initializeConfig(cmd)
 
 			// Set values of app config keys that are dependent on command flags
-			sceneDir := appConfig.TagWithDashes("SceneDirPath")
+			sceneDir := appConfig.SceneDirPath
 			appConfig.SceneFilePath = path.Join(cmd.Flag(sceneDir).Value.String(), "scene.json")
-			appConfig.VRMFilePath = path.Join(cmd.Flag(appConfig.TagWithDashes("SceneDirPath")).Value.String(), "default.vrm")
+			appConfig.VRMFilePath = path.Join(cmd.Flag(sceneDir).Value.String(), "default.vrm")
 
 			// Create scene home if not explicitly specified elsewhere
 			if !cmd.Flag(sceneDir).Changed {
@@ -156,14 +156,14 @@ func newRootCommand() *cobra.Command {
 
 	// Here, we start defining a load of flags
 	rootFlags := rootCmd.Flags()
-	rootFlags.StringVarP(&appConfig.AppCfgFilePath, appConfig.TagWithDashes("AppCfgFilePath"), "c", cfgFileNoExt+".{json,yaml,toml,ini}", "Path to a config file.")
-	rootFlags.Var(&appConfig.VMCListen, appConfig.TagWithDashes("VMCListen"), "Address to listen on for VMC motion data")
-	rootFlags.Var(&appConfig.FM3DListen, appConfig.TagWithDashes("FM3DListen"), "Address to listen on for Facemotion3D motion data")
-	rootFlags.Var(&appConfig.FM3DDevice, appConfig.TagWithDashes("FM3DDevice"), "IP address of phone/device that is the source of Facemotion3D motion data")
-	rootFlags.Var(&appConfig.APIListen, appConfig.TagWithDashes("APIListen"), "Address to listen on for API queries")
-	rootFlags.IntVar(&appConfig.ModelUpdateFrequency, appConfig.TagWithDashes("ModelUpdateFrequency"), 60, "Times per second the live VRM model data is sent to each client")
-	rootFlags.StringVar(&appConfig.SceneDirPath, appConfig.TagWithDashes("SceneDirPath"), sceneDir, "Path to scene data home")
-	rootFlags.StringVar(&appConfig.Receiver, appConfig.TagWithDashes("receiver"), "VirtualMotionCapture", "Name of a receiver to use as source of motion data")
+	rootFlags.StringVar(&appConfig.AppCfgFilePath, "config-app", cfgFileNoExt+".{json,yaml,toml,ini}", "Path to a config file.")
+	rootFlags.Var(&appConfig.VMCListen, "listen-vmc", "Address to listen on for VMC motion data")
+	rootFlags.Var(&appConfig.FM3DListen, "listen-fm3d", "Address to listen on for Facemotion3D motion data")
+	rootFlags.Var(&appConfig.FM3DDevice, "device-fm3d", "IP address of phone/device that is the source of Facemotion3D motion data")
+	rootFlags.Var(&appConfig.APIListen, "listen-api", "Address to listen on for API queries")
+	rootFlags.IntVar(&appConfig.ModelUpdateFrequency, "update-frequency", 60, "Times per second the live VRM model data is sent to each client")
+	rootFlags.StringVar(&appConfig.SceneDirPath, "scene-home", sceneDir, "Path to scene data home")
+	rootFlags.StringVar(&appConfig.Receiver, "receiver", "VirtualMotionCapture", "Name of a receiver to use as source of motion data")
 
 	return rootCmd
 
