@@ -18,11 +18,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package facemotion3d
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"net"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -36,19 +34,6 @@ import (
 var (
 	fm3dReceiver *receivers.MotionReceiver
 )
-
-// Extract one full frame of motion data. A valid full frame of data is basically anything between sets of the text: "___FACEMOTION3D".
-func extractFrame(rawStr string) (string, error) {
-
-	matchFrame := regexp.MustCompile("___FACEMOTION3D(.*)___FACEMOTION3D")
-	frameMatches := matchFrame.FindStringSubmatch(rawStr)
-	if len(frameMatches) == 0 {
-		return "", errors.New("empty frame of data")
-	}
-
-	return strings.ReplaceAll(frameMatches[1], "___FACEMOTION3D", ""), nil
-
-}
 
 // Parse a full frame of motion data.
 func parseFrame(frameStr string) {
@@ -75,19 +60,22 @@ func parseFrame(frameStr string) {
 			// The name and value are separated by a "&"
 			singlePayload := strings.Split(payloadStr, "&")
 
-			// The blend shape key is in camelCase, but we need it in PascalCase
+			// Blend shape name
 			key := singlePayload[0]
+
+			// Convert name of key from camelCase to PascalCase
 			key = strings.ToUpper(key[0:1]) + key[1:]
 
-			// Convert the blend shape value from a string to a float
+			// Blend shape value
 			value, err := strconv.ParseFloat(singlePayload[1], 32)
 			if err != nil {
 				continue
 			}
+
 			// The blend shape values are in integer format from 0 to 100, but it has to be in decimal format from 0 to 1
 			value = (value / 100)
 
-			// Cast value to type BlendShape
+			// Cast value to type obj.BlendShape
 			blendShape := obj.BlendShape(value)
 
 			fm3dReceiver.VRM.WriteBlendShape(key, blendShape)
@@ -209,7 +197,7 @@ func listenTCP() {
 		for {
 
 			// Repeatedly read from connection new face data
-			connBuf := make([]byte, 1024)
+			connBuf := make([]byte, 2048)
 			_, err := conn.Read(connBuf)
 			if err != nil {
 				break
@@ -217,16 +205,19 @@ func listenTCP() {
 			liveFrames += string(connBuf)
 
 			// Attempt to pull the first valid frame of data.
-			latestFrame, err := extractFrame(liveFrames)
-			if err != nil {
+			latestFrame := strings.Split(liveFrames, "___FACEMOTION3D")[0]
+			if latestFrame == "" {
 				continue
 			}
+
+			// Remove null bytes
+			latestFrame = strings.ReplaceAll(latestFrame, "\x00", "")
 
 			// Parse the frame of data
 			parseFrame(latestFrame)
 
 			// Prune the frame of data that we just worked on, so we do not work with it on next iteration
-			liveFrames = strings.ReplaceAll(liveFrames, latestFrame, "")
+			liveFrames = strings.ReplaceAll(liveFrames, latestFrame+"___FACEMOTION3D", "")
 
 		}
 
