@@ -68,11 +68,9 @@ func saveScene(scene *config.Scene, sceneFilePath string) error {
 
 func New(appCfg *config.App, sceneCfg *config.Scene, receiverMap map[string]*receivers.MotionReceiver) *mux.Router {
 
-	// Use the first motion receiver in map
-	for name, receiver := range receiverMap {
-		log.Printf("The active receiver is %s", name)
-		activeReceiver = receiver
-		break
+	// Use picked receiver from user
+	if receiverMap[appCfg.Receiver] == nil {
+		log.Printf("Suggested receiver \"%s\" does not exist!", appCfg.Receiver)
 	}
 
 	// Router for API and web frontend
