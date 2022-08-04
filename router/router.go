@@ -34,10 +34,6 @@ import (
 	"github.com/thatpix3l/fntwo/receivers"
 )
 
-var (
-	activeReceiver *receivers.MotionReceiver
-)
-
 // Helper func to allow all origin, headers, and methods for HTTP requests.
 func allowHTTPAllPerms(wPtr *http.ResponseWriter) {
 
@@ -72,6 +68,8 @@ func New(appCfg *config.App, sceneCfg *config.Scene, receiverMap map[string]*rec
 	if receiverMap[appCfg.Receiver] == nil {
 		log.Printf("Suggested receiver \"%s\" does not exist!", appCfg.Receiver)
 	}
+
+	activeReceiver := receiverMap[appCfg.Receiver]
 
 	// Router for API and web frontend
 	router := mux.NewRouter()
