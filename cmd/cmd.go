@@ -38,15 +38,15 @@ var (
 	// Neat and tidy according to freedesktop.org's base directory specifications.
 	// Along with whatever Windows does, I guess...
 
-	appConfig config.App
+	appConfig = config.App{}
 
-	appName      = "fntwo"                  // Name of program. Duh...
-	envPrefix    = strings.ToUpper(appName) // Prefix for all environment variables used for configuration
-	cfgNameNoExt = "config"                 // Name of the default config file used, without an extension
+	appName            = "fntwo"                  // Name of program. Duh...
+	envPrefix          = strings.ToUpper(appName) // Prefix for all environment variables used for configuration
+	appConfigNameNoExt = "config"                 // Name of the default config file used, without an extension
 
-	cfgDir       = path.Join(xdg.ConfigHome, appName) // Default path to config directory
-	cfgFileNoExt = path.Join(cfgDir, cfgNameNoExt)    // Default path to config file, without extension
-	sceneDir     = path.Join(xdg.DataHome, appName)   // Default path to scene directory
+	cfgDir       = path.Join(xdg.ConfigHome, appName)    // Default path to config directory
+	cfgFileNoExt = path.Join(cfgDir, appConfigNameNoExt) // Default path to config file, without extension
+	sceneDir     = path.Join(xdg.DataHome, appName)      // Default path to scene directory
 )
 
 // Entrypoint for command line
@@ -69,10 +69,10 @@ func initializeConfig(cmd *cobra.Command) {
 	v := viper.New()
 
 	// Setting properties of the config file, before reading and processing
-	v.SetConfigName(cfgNameNoExt) // Default config name, without extension
-	v.AddConfigPath(cfgDir)       // Path to search for config files
-	v.SetEnvPrefix(envPrefix)     // Prefix for all environment variables
-	v.AutomaticEnv()              // Auto-check if any config keys match env keys
+	v.SetConfigName(appConfigNameNoExt) // Default config name, without extension
+	v.AddConfigPath(cfgDir)             // Path to search for config files
+	v.SetEnvPrefix(envPrefix)           // Prefix for all environment variables
+	v.AutomaticEnv()                    // Auto-check if any config keys match env keys
 
 	// If config flag was manually set by the user, set that as the config file to be loaded
 	appConfigFlagName := "config-app"
@@ -134,13 +134,12 @@ func newRootCommand() *cobra.Command {
 			initializeConfig(cmd)
 
 			// Set values of app config keys that are dependent on command flags
-			sceneDir := appConfig.SceneDirPath
-			appConfig.SceneFilePath = path.Join(cmd.Flag(sceneDir).Value.String(), "scene.json")
-			appConfig.VRMFilePath = path.Join(cmd.Flag(sceneDir).Value.String(), "default.vrm")
+			appConfig.SceneFilePath = path.Join(cmd.Flag("scene-home").Value.String(), "scene.json")
+			appConfig.VRMFilePath = path.Join(cmd.Flag("scene-home").Value.String(), "default.vrm")
 
 			// Create scene home if not explicitly specified elsewhere
-			if !cmd.Flag(sceneDir).Changed {
-				if err := os.MkdirAll(cmd.Flag(sceneDir).Value.String(), 0755); err != nil {
+			if !cmd.Flag("scene-home").Changed {
+				if err := os.MkdirAll(cmd.Flag("scene-home").Value.String(), 0755); err != nil {
 					log.Fatal(err)
 				}
 			}
