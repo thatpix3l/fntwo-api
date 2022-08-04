@@ -120,11 +120,13 @@ func listenVMC() {
 				Y: value[1],
 				Z: value[2],
 			},
-			Rotation: obj.QuaternionRotation{
-				X: value[3],
-				Y: value[4],
-				Z: value[5],
-				W: value[6],
+			Rotation: obj.Rotation{
+				Quaternion: obj.QuaternionRotation{
+					X: value[3],
+					Y: value[4],
+					Z: value[5],
+					W: value[6],
+				},
 			},
 		}
 

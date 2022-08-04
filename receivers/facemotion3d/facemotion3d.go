@@ -135,11 +135,13 @@ func parseFrame(frameStr string) {
 			)
 
 			bone := obj.Bone{
-				Rotation: obj.QuaternionRotation{
-					X: float32(boneQuat.X),
-					Y: float32(boneQuat.Y),
-					Z: float32(boneQuat.Z),
-					W: float32(boneQuat.W),
+				Rotation: obj.Rotation{
+					Quaternion: obj.QuaternionRotation{
+						X: float32(boneQuat.X),
+						Y: float32(boneQuat.Y),
+						Z: float32(boneQuat.Z),
+						W: float32(boneQuat.W),
+					},
 				},
 			}
 

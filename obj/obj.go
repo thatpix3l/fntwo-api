@@ -37,10 +37,14 @@ type QuaternionRotation struct {
 	W float32 `json:"w"`
 }
 
+type Rotation struct {
+	Quaternion QuaternionRotation `json:"quaternion"`
+}
+
 // Properties of a single VRM Bone
 type Bone struct {
-	Position Position           `json:"position"`
-	Rotation QuaternionRotation `json:"rotation"`
+	Position Position `json:"position"`
+	Rotation Rotation `json:"rotation"`
 }
 
 // Transformational properties of the ThreeJS camera
