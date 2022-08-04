@@ -77,21 +77,21 @@ func listenVMC() {
 		}
 
 		// Get value float32
-		blendShape, ok := msg.Arguments[1].(obj.BlendShape)
+		value, ok := msg.Arguments[1].(float32)
 		if !ok {
 			return
 		}
 
 		// Set max and min for blendValue to between 0 and 1
-		if blendShape > 1 {
-			blendShape = 1
+		if value > 1 {
+			value = 1
 		}
 
-		if blendShape < 0 {
-			blendShape = 0
+		if value < 0 {
+			value = 0
 		}
 
-		vmcReceiver.VRM.WriteBlendShape(key, blendShape)
+		vmcReceiver.VRM.WriteBlendShape(key, obj.BlendShape(value))
 
 	})
 
@@ -134,9 +134,8 @@ func listenVMC() {
 	})
 
 	// OSC server configuration
-	addr := vmcReceiver.AppConfig.VMCListen.String()
 	server := &osc.Server{
-		Addr:       addr,
+		Addr:       vmcReceiver.AppConfig.VMCListen.String(),
 		Dispatcher: d,
 	}
 
