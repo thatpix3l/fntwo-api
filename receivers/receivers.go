@@ -25,22 +25,30 @@ import (
 type MotionReceiver struct {
 	AppConfig     *config.App // Pointer an existing app config, for reading various settings.
 	VRM           obj.VRM     // VRM object to transform in 3D space.
-	startCallback func()      // Callback to run when starting a new receiver. Up to implementation on what's actually called.
+	startCallback func()      // Callback for starting the receiver
+	stopCallback  func()      // Callback for stopping the receiver
 }
 
 // Create a new motion receiver.
-func New(appConfig *config.App, start func()) *MotionReceiver {
+func New(appConfig *config.App, start func(), stop func()) *MotionReceiver {
 
 	return &MotionReceiver{
 		AppConfig:     appConfig,
 		VRM:           obj.NewVRM(),
 		startCallback: start,
+		stopCallback:  stop,
 	}
 
 }
 
-// Start motion receiver in background, return reference to it.
+// Start motion receiver in background
 func (m *MotionReceiver) Start() *MotionReceiver {
 	go m.startCallback()
+	return m
+}
+
+// Stop motion receiver in background
+func (m *MotionReceiver) Stop() *MotionReceiver {
+	go m.stopCallback()
 	return m
 }

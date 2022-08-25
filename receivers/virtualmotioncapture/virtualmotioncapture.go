@@ -30,6 +30,7 @@ import (
 
 var (
 	vmcReceiver *receivers.MotionReceiver
+	server      *osc.Server
 )
 
 // Assuming everything after the first index is bone data, type assert it as a slice of float32
@@ -136,7 +137,7 @@ func listenVMC() {
 	})
 
 	// OSC server configuration
-	server := &osc.Server{
+	server = &osc.Server{
 		Addr:       vmcReceiver.AppConfig.VMCListen.String(),
 		Dispatcher: d,
 	}
@@ -146,11 +147,15 @@ func listenVMC() {
 
 }
 
+func stopListening() {
+	server.CloseConnection()
+}
+
 // Create a new MotionReceiver.
 // Uses the VMC protocol, a subset of the OSC protocol, which internally uses UDP for low-latency motion parsing.
 func New(appConfig *config.App) *receivers.MotionReceiver {
 
-	vmcReceiver = receivers.New(appConfig, listenVMC)
+	vmcReceiver = receivers.New(appConfig, listenVMC, stopListening)
 	return vmcReceiver
 
 }

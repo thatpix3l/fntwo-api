@@ -34,6 +34,11 @@ import (
 	"github.com/thatpix3l/fntwo/receivers"
 )
 
+type receiverInfo struct {
+	Active    string   `json:"active"`
+	Available []string `json:"available"`
+}
+
 // Helper func to allow all origin, headers, and methods for HTTP requests.
 func allowHTTPAllPerms(wPtr *http.ResponseWriter) {
 
@@ -62,14 +67,14 @@ func saveScene(scene *config.Scene, sceneFilePath string) error {
 
 }
 
-func New(appCfg *config.App, sceneCfg *config.Scene, receiverMap map[string]*receivers.MotionReceiver) *mux.Router {
+func New(appConfig *config.App, sceneConfig *config.Scene, receiverMap map[string]*receivers.MotionReceiver) *mux.Router {
 
 	// Use picked receiver from user
-	if receiverMap[appCfg.Receiver] == nil {
-		log.Printf("Suggested receiver \"%s\" does not exist!", appCfg.Receiver)
+	if receiverMap[appConfig.Receiver] == nil {
+		log.Printf("Suggested receiver \"%s\" does not exist!", appConfig.Receiver)
 	}
 
-	activeReceiver := receiverMap[appCfg.Receiver]
+	activeReceiver := receiverMap[appConfig.Receiver]
 
 	// Router for API and web frontend
 	router := mux.NewRouter()
@@ -87,7 +92,7 @@ func New(appCfg *config.App, sceneCfg *config.Scene, receiverMap map[string]*rec
 		}
 
 		// On first-time connect, send the camera state
-		if err := ws.WriteJSON(sceneCfg.Camera); err != nil {
+		if err := ws.WriteJSON(sceneConfig.Camera); err != nil {
 			log.Println(err)
 			return
 		}
@@ -96,13 +101,13 @@ func New(appCfg *config.App, sceneCfg *config.Scene, receiverMap map[string]*rec
 		cameraPool.Create(func(relayedData interface{}, client *pool.Client) {
 
 			var ok bool // Boolean for if the pool's relayedData was type asserted as obj.Camera
-			if sceneCfg.Camera, ok = relayedData.(obj.Camera); !ok {
+			if sceneConfig.Camera, ok = relayedData.(obj.Camera); !ok {
 				log.Println("Couldn't type assert relayed data as a camera")
 				return
 			}
 
 			// Write camera data to connected frontend client
-			if err := ws.WriteJSON(sceneCfg.Camera); err != nil {
+			if err := ws.WriteJSON(sceneConfig.Camera); err != nil {
 				log.Println(err)
 				client.Delete()
 				ws.Close()
@@ -122,11 +127,11 @@ func New(appCfg *config.App, sceneCfg *config.Scene, receiverMap map[string]*rec
 
 		for {
 
-			if err := ws.ReadJSON(&sceneCfg.Camera); err != nil {
+			if err := ws.ReadJSON(&sceneConfig.Camera); err != nil {
 				return
 			}
 
-			cameraPool.Update(sceneCfg.Camera)
+			cameraPool.Update(sceneConfig.Camera)
 
 		}
 
@@ -160,7 +165,7 @@ func New(appCfg *config.App, sceneCfg *config.Scene, receiverMap map[string]*rec
 			})
 
 			// Wait for whatever how long, per second. By default, 1/60 of a second
-			time.Sleep(time.Duration(1e9 / appCfg.ModelUpdateFrequency))
+			time.Sleep(time.Duration(1e9 / appConfig.ModelUpdateFrequency))
 
 		}
 
@@ -176,7 +181,7 @@ func New(appCfg *config.App, sceneCfg *config.Scene, receiverMap map[string]*rec
 		allowHTTPAllPerms(&w)
 
 		// Serve default VRM file
-		http.ServeFile(w, r, appCfg.VRMFilePath)
+		http.ServeFile(w, r, appConfig.VRMFilePath)
 
 	}).Methods("GET", "OPTIONS")
 
@@ -188,7 +193,7 @@ func New(appCfg *config.App, sceneCfg *config.Scene, receiverMap map[string]*rec
 		allowHTTPAllPerms(&w)
 
 		// Destination VRM file on system
-		dest, err := os.Create(appCfg.VRMFilePath)
+		dest, err := os.Create(appConfig.VRMFilePath)
 		if err != nil {
 			log.Println(err)
 			return
@@ -210,7 +215,7 @@ func New(appCfg *config.App, sceneCfg *config.Scene, receiverMap map[string]*rec
 		// Access control
 		allowHTTPAllPerms(&w)
 
-		if err := saveScene(sceneCfg, appCfg.SceneFilePath); err != nil {
+		if err := saveScene(sceneConfig, appConfig.SceneFilePath); err != nil {
 			log.Println(err)
 			return
 		}
@@ -223,7 +228,7 @@ func New(appCfg *config.App, sceneCfg *config.Scene, receiverMap map[string]*rec
 
 		allowHTTPAllPerms(&w)
 
-		sceneConfigBytes, err := json.Marshal(sceneCfg)
+		sceneConfigBytes, err := json.Marshal(sceneConfig)
 		if err != nil {
 			log.Println(err)
 			return
@@ -243,7 +248,7 @@ func New(appCfg *config.App, sceneCfg *config.Scene, receiverMap map[string]*rec
 		allowHTTPAllPerms(&w)
 
 		// Marshal initial config into bytes
-		appConfigBytes, err := json.Marshal(appCfg)
+		appConfigBytes, err := json.Marshal(appConfig)
 		if err != nil {
 			log.Println(err)
 			return
@@ -255,17 +260,22 @@ func New(appCfg *config.App, sceneCfg *config.Scene, receiverMap map[string]*rec
 
 	}).Methods("GET", "OPTIONS")
 
-	// Route for retrieving the names of all available MotionReceiver sources
+	// Route for retrieving info about receivers, including which one is in use
 	router.HandleFunc("/api/receiver", func(w http.ResponseWriter, r *http.Request) {
 
 		log.Println("Received request to list all available motion receivers")
-		var receiverNames []string
 
+		var receiverNames []string
 		for name := range receiverMap {
 			receiverNames = append(receiverNames, name)
 		}
 
-		bytes, err := json.Marshal(receiverNames)
+		info := receiverInfo{
+			Active:    appConfig.Receiver,
+			Available: receiverNames,
+		}
+
+		bytes, err := json.Marshal(info)
 		if err != nil {
 			log.Println(err)
 			return
@@ -295,9 +305,16 @@ func New(appCfg *config.App, sceneCfg *config.Scene, receiverMap map[string]*rec
 			return
 		}
 
+		// Stop the current receiver
+		activeReceiver.Stop()
+
 		// Switch the active receiver
-		appCfg.Receiver = suggestedReceiver
-		activeReceiver = receiverMap[appCfg.Receiver]
+		appConfig.Receiver = suggestedReceiver
+		activeReceiver = receiverMap[appConfig.Receiver]
+
+		// Start the new receiver
+		activeReceiver.Start()
+
 		log.Printf("Successfully changed the active receiver to %s", suggestedReceiver)
 
 	}).Methods("PUT", "OPTIONS")

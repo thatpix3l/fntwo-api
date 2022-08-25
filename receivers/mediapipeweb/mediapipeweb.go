@@ -135,7 +135,7 @@ func listenMediapipeWeb() {
 // Listens for WebSocket connections
 func New(appConfig *config.App) *receivers.MotionReceiver {
 
-	mpReceiver = receivers.New(appConfig, listenMediapipeWeb)
+	mpReceiver = receivers.New(appConfig, listenMediapipeWeb, func() {})
 	return mpReceiver
 
 }
