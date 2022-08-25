@@ -167,7 +167,7 @@ func New(appCfg *config.App, sceneCfg *config.Scene, receiverMap map[string]*rec
 	})
 
 	// Route for getting the default VRM model
-	router.HandleFunc("/api/read/model/get", func(w http.ResponseWriter, r *http.Request) {
+	router.HandleFunc("/api/model", func(w http.ResponseWriter, r *http.Request) {
 
 		log.Println("Received request to retrieve default VRM file")
 
@@ -181,7 +181,7 @@ func New(appCfg *config.App, sceneCfg *config.Scene, receiverMap map[string]*rec
 	}).Methods("GET", "OPTIONS")
 
 	// Route for setting the default VRM model
-	router.HandleFunc("/api/write/model/set", func(w http.ResponseWriter, r *http.Request) {
+	router.HandleFunc("/api/model/update", func(w http.ResponseWriter, r *http.Request) {
 
 		log.Println("Received request to set default VRM file")
 
@@ -203,7 +203,7 @@ func New(appCfg *config.App, sceneCfg *config.Scene, receiverMap map[string]*rec
 	}).Methods("PUT", "OPTIONS")
 
 	// Route for saving the internal state of the scene config
-	router.HandleFunc("/api/write/config/scene/set", func(w http.ResponseWriter, r *http.Request) {
+	router.HandleFunc("/api/config/scene/update", func(w http.ResponseWriter, r *http.Request) {
 
 		log.Println("Received request to save current scene")
 
@@ -217,7 +217,7 @@ func New(appCfg *config.App, sceneCfg *config.Scene, receiverMap map[string]*rec
 
 	}).Methods("PUT", "OPTIONS")
 
-	router.HandleFunc("/api/write/config/scene/get", func(w http.ResponseWriter, r *http.Request) {
+	router.HandleFunc("/api/config/scene", func(w http.ResponseWriter, r *http.Request) {
 
 		log.Println("Received request to retrieve current state of scene config")
 
@@ -235,7 +235,7 @@ func New(appCfg *config.App, sceneCfg *config.Scene, receiverMap map[string]*rec
 	})
 
 	// Route for retrieving the initial config for the server
-	router.HandleFunc("/api/read/config/app/get", func(w http.ResponseWriter, r *http.Request) {
+	router.HandleFunc("/api/config/app", func(w http.ResponseWriter, r *http.Request) {
 
 		log.Println("Received request to retrieve initial config")
 
@@ -255,27 +255,8 @@ func New(appCfg *config.App, sceneCfg *config.Scene, receiverMap map[string]*rec
 
 	}).Methods("GET", "OPTIONS")
 
-	router.HandleFunc("/api/read/config/scene/get", func(w http.ResponseWriter, r *http.Request) {
-
-		log.Println(`Received read request for scene config`)
-
-		allowHTTPAllPerms(&w)
-
-		//Marshal scene config into bytes
-		sceneConfigBytes, err := json.Marshal(sceneCfg)
-		if err != nil {
-			log.Println(err)
-			return
-		}
-
-		// Reply back to request with byte-format of scene config
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(sceneConfigBytes)
-
-	})
-
-	// Route for returning the names of all available MotionReceiver sources
-	router.HandleFunc("/api/read/receiver/get", func(w http.ResponseWriter, r *http.Request) {
+	// Route for retrieving the names of all available MotionReceiver sources
+	router.HandleFunc("/api/receiver", func(w http.ResponseWriter, r *http.Request) {
 
 		log.Println("Received request to list all available motion receivers")
 		var receiverNames []string
@@ -296,7 +277,7 @@ func New(appCfg *config.App, sceneCfg *config.Scene, receiverMap map[string]*rec
 	}).Methods("GET", "OPTIONS")
 
 	// Route for changing the active MotionReceiver source used
-	router.HandleFunc("/api/write/receiver/set", func(w http.ResponseWriter, r *http.Request) {
+	router.HandleFunc("/api/receiver/update", func(w http.ResponseWriter, r *http.Request) {
 
 		log.Println("Received request to change the MotionReceiver source for model")
 
