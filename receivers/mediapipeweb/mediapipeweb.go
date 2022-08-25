@@ -114,70 +114,14 @@ func listenMediapipeWeb() {
 			return
 		}
 
-		isClosed := false
-		for !isClosed {
+		for {
 
 			// Mediapipe face mesh related data
-			var mpFaceMesh mediapipeFacemesh
+			var mpFaceMesh []obj.Position
 			if err := ws.ReadJSON(&mpFaceMesh); err != nil {
 				log.Println(err)
 				return
 			}
-
-			rotationRayVector := obj.Position{}
-			rotationRayVectorCount := 0
-
-			log.Println(mpFaceMesh)
-
-			for _, triangleIndices := range faceMeshTriangleIndices {
-
-				triangle := []obj.Position{
-					mpFaceMesh.Landmarks[triangleIndices[0]],
-					mpFaceMesh.Landmarks[triangleIndices[1]],
-					mpFaceMesh.Landmarks[triangleIndices[2]],
-				}
-
-				// Normalize the world origin for all vertices of triangle, from Mediapipe's to threeJS
-				triangle[0] = normalizePosition(triangle[0], mpWorldOrigin, mpFaceMesh.Video)
-				triangle[1] = normalizePosition(triangle[1], mpWorldOrigin, mpFaceMesh.Video)
-				triangle[2] = normalizePosition(triangle[2], mpWorldOrigin, mpFaceMesh.Video)
-
-				// Create two vectors, each originating from different points and converging to the same point
-				vector1 := directionVector(triangle[0], triangle[1])
-				vector2 := directionVector(triangle[2], triangle[1])
-
-				// Surface normal direction
-				surfaceNormal := obj.Position{
-					X: vector1.Y*vector2.Z - (vector1.Z * vector2.Y),
-					Y: vector1.Z*vector2.X - (vector1.X * vector2.Z),
-					Z: vector1.X*vector2.Y - (vector1.Y * vector2.X),
-				}
-
-				// Sum of direction for all triangle surface normals
-				rotationRayVector.X += surfaceNormal.X
-				rotationRayVector.Y += surfaceNormal.Y
-				rotationRayVector.Z += surfaceNormal.Z
-
-				rotationRayVectorCount++
-
-			}
-
-			// Divide the collective sum of all ray vectors by count of how many ray vectors there are.
-			// Now you have the average of all ray vectors
-			rotationRayVector.X /= float32(rotationRayVectorCount)
-			rotationRayVector.Y /= float32(rotationRayVectorCount)
-			rotationRayVector.Z /= float32(rotationRayVectorCount)
-
-			dotProduct := (originRayVector.X * rotationRayVector.X) + (originRayVector.Y * rotationRayVector.Y) + (originRayVector.Z * rotationRayVector.Z)
-
-			rotationRayVectorMagnitude := math.Pow(
-				math.Pow(float64(rotationRayVector.X), 2)+
-					math.Pow(float64(rotationRayVector.Y), 2)+
-					math.Pow(float64(rotationRayVector.Z), 2),
-				0.2,
-			)
-
-			log.Println(math.Acos(float64(dotProduct / (float32(originRayVectorMagnitude * rotationRayVectorMagnitude)))))
 
 		}
 
