@@ -47,8 +47,8 @@ func (m *MotionReceiver) Start() *MotionReceiver {
 	return m
 }
 
-// Stop motion receiver in background
+// Stop motion receiver
 func (m *MotionReceiver) Stop() *MotionReceiver {
-	go m.stopCallback()
+	m.stopCallback()
 	return m
 }
