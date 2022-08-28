@@ -263,17 +263,13 @@ func New(appConfig *config.App, sceneConfig *config.Scene, receiverMap map[strin
 	// Route for retrieving info about receivers, including which one is in use
 	router.HandleFunc("/api/receiver", func(w http.ResponseWriter, r *http.Request) {
 
-		log.Println("Received request to list all available motion receivers")
+		log.Println("Received API request for receiver info")
 
-		var receiverNames []string
+		info := receiverInfo{}
 		for name := range receiverMap {
-			receiverNames = append(receiverNames, name)
+			info.Available = append(info.Available, name)
 		}
-
-		info := receiverInfo{
-			Active:    appConfig.Receiver,
-			Available: receiverNames,
-		}
+		info.Active = appConfig.Receiver
 
 		bytes, err := json.Marshal(info)
 		if err != nil {
