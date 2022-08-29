@@ -121,6 +121,7 @@ func newRootCommand() *cobra.Command {
 	appConfig.VMCListen.Set("0.0.0.0:39540")
 	appConfig.FM3DListen.Set("0.0.0.0:49986")
 	appConfig.APIListen.Set("127.0.0.1:3579")
+	appConfig.Receiver = "VirtualMotionProtocol"
 
 	// Base command of actual program
 	rootCmd := &cobra.Command{
