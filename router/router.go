@@ -83,7 +83,7 @@ func New(appConfig *config.App, sceneConfig *config.Scene, receiverMap map[strin
 	// Route for relaying the internal state of the camera to all clients
 	router.HandleFunc("/live/read/camera", func(w http.ResponseWriter, r *http.Request) {
 
-		log.Println("Adding new camera client...")
+		log.Println("Adding new camera reader client...")
 
 		// Upgrade GET request to WebSocket
 		ws, err := helper.WebSocketUpgrade(w, r)
@@ -113,6 +113,8 @@ func New(appConfig *config.App, sceneConfig *config.Scene, receiverMap map[strin
 
 	router.HandleFunc("/live/write/camera", func(w http.ResponseWriter, r *http.Request) {
 
+		log.Println("Adding new camera writer client...")
+
 		ws, err := helper.WebSocketUpgrade(w, r)
 		if err != nil {
 			log.Println(err)
@@ -133,6 +135,8 @@ func New(appConfig *config.App, sceneConfig *config.Scene, receiverMap map[strin
 
 	// Route for updating VRM model data to all clients
 	router.HandleFunc("/live/read/model", func(w http.ResponseWriter, r *http.Request) {
+
+		log.Println("Adding new model reader client...")
 
 		// Upgrade model data client into a WebSocket
 		ws, err := helper.WebSocketUpgrade(w, r)
@@ -167,6 +171,8 @@ func New(appConfig *config.App, sceneConfig *config.Scene, receiverMap map[strin
 
 	// Route for live reading of the app's config
 	router.HandleFunc("/live/read/config/app", func(w http.ResponseWriter, r *http.Request) {
+
+		log.Println("Adding new app config reader client...")
 
 		// Upgrade to WebSocket
 		ws, err := helper.WebSocketUpgrade(w, r)
