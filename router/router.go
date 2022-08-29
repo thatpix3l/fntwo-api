@@ -298,7 +298,7 @@ func New(appConfig *config.App, sceneConfig *config.Scene, receiverMap map[strin
 
 		// Error if the suggested receiver does not exist
 		if receiverMap[suggestedReceiver] == nil {
-			log.Printf("\"%s\" does not exist!", suggestedReceiver)
+			log.Printf("Suggested receiver \"%s\" does not exist!", suggestedReceiver)
 			return
 		}
 
