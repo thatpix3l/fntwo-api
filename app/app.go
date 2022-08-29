@@ -33,7 +33,7 @@ import (
 )
 
 var (
-	sceneCfg = &config.Scene{} // Scene config for various live data
+	sceneConfig = config.NewScene() // Scene config for various live data
 )
 
 // Helper func to load a scene config file
@@ -46,7 +46,7 @@ func loadScene(sceneCfgPath string) error {
 	}
 
 	// Unmarshal into memory's scene config
-	if err := json.Unmarshal(content, sceneCfg); err != nil {
+	if err := json.Unmarshal(content, sceneConfig); err != nil {
 		return err
 	}
 
@@ -117,7 +117,7 @@ func Start(appConfig *config.App) {
 
 	// Blocking listen and serve for WebSockets and API server
 	log.Printf("Serving API on %s", appConfig.APIListen)
-	routerAPI := router.New(appConfig, sceneCfg, receiverMap)
+	routerAPI := router.New(appConfig, sceneConfig, receiverMap)
 	http.ListenAndServe(string(appConfig.APIListen), routerAPI)
 
 }

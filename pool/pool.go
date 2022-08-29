@@ -23,24 +23,26 @@ import (
 	"github.com/thatpix3l/fntwo/helper"
 )
 
+type updateCallback func(client *Client)
+
 type Pool struct {
 	clients map[string]Client // List of clients waiting for data
 }
 
 type Client struct {
-	ID      string                                        // Unique client ID
-	process func(relayedData interface{}, client *Client) // Callback to run on new relayedData
-	poolPtr *Pool                                         // Pointer to an existing pool
+	ID             string         // Unique client ID
+	updateCallback updateCallback // Callback to run on new relayedData
+	poolPtr        *Pool          // Pointer to an existing pool
 }
 
-// Create client, return reference to it
-func (p Pool) Create(dataCallback func(relayedData interface{}, client *Client)) {
+// Create pool client, with callback that gets run everytime pool's Update is called
+func (p Pool) Create(process updateCallback) {
 
 	clientID := helper.RandomString(8)
 	newClient := Client{
-		ID:      clientID,
-		process: dataCallback,
-		poolPtr: &p,
+		ID:             clientID,
+		updateCallback: process,
+		poolPtr:        &p,
 	}
 	p.clients[clientID] = newClient
 
@@ -56,10 +58,10 @@ func (p Pool) LogCount() {
 	log.Printf("Number of clients: %d", len(p.clients))
 }
 
-// Update pool of clients with the given data
-func (p Pool) Update(data interface{}) {
+// Run each client's update callback
+func (p Pool) Update() {
 	for _, c := range p.clients {
-		c.process(data, &c)
+		c.updateCallback(&c)
 	}
 }
 

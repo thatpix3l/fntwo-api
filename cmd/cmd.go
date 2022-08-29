@@ -38,7 +38,7 @@ var (
 	// Neat and tidy according to freedesktop.org's base directory specifications.
 	// Along with whatever Windows does, I guess...
 
-	appConfig = config.App{}
+	appConfig = config.NewApp()
 
 	appName            = "fntwo"                  // Name of program. Duh...
 	envPrefix          = strings.ToUpper(appName) // Prefix for all environment variables used for configuration
@@ -149,7 +149,7 @@ func newRootCommand() *cobra.Command {
 		Run: func(_ *cobra.Command, _ []string) {
 
 			// Entrypoint for actual program
-			app.Start(&appConfig)
+			app.Start(appConfig)
 
 		},
 	}

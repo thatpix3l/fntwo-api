@@ -23,6 +23,7 @@ import (
 	"strings"
 
 	"github.com/thatpix3l/fntwo/obj"
+	"github.com/thatpix3l/fntwo/pool"
 )
 
 type Address string
@@ -74,10 +75,27 @@ type App struct {
 	AppCfgFilePath       string  `json:"config_file"`            // Path to app config file
 	VRMFilePath          string  `json:"vrm_file"`               // Path to VRM file
 	Receiver             string  `json:"receiver"`               // Name of receiver to use on startup
+
+	pool.Pool `json:"-"`
+}
+
+// Create a new config for the application
+func NewApp() *App {
+	return &App{
+		Pool: pool.New(),
+	}
 }
 
 // Config used for the looks and appearance of the model viewer.
 // This is what most people will care about.
 type Scene struct {
 	Camera obj.Camera `json:"camera"`
+
+	pool.Pool `json:"-"`
+}
+
+func NewScene() *Scene {
+	return &Scene{
+		Pool: pool.New(),
+	}
 }

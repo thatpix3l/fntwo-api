@@ -81,7 +81,6 @@ func New(appConfig *config.App, sceneConfig *config.Scene, receiverMap map[strin
 	router := mux.NewRouter()
 
 	// Route for relaying the internal state of the camera to all clients
-	cameraPool := pool.New()
 	router.HandleFunc("/live/read/camera", func(w http.ResponseWriter, r *http.Request) {
 
 		log.Println("Adding new camera client...")
@@ -99,13 +98,7 @@ func New(appConfig *config.App, sceneConfig *config.Scene, receiverMap map[strin
 		}
 
 		// Add a new camera client
-		cameraPool.Create(func(relayedData interface{}, client *pool.Client) {
-
-			var ok bool // Boolean for if the pool's relayedData was type asserted as obj.Camera
-			if sceneConfig.Camera, ok = relayedData.(obj.Camera); !ok {
-				log.Println("Couldn't type assert relayed data as a camera")
-				return
-			}
+		sceneConfig.Create(func(client *pool.Client) {
 
 			// Write camera data to connected frontend client
 			if err := ws.WriteJSON(sceneConfig.Camera); err != nil {
@@ -132,7 +125,7 @@ func New(appConfig *config.App, sceneConfig *config.Scene, receiverMap map[strin
 				return
 			}
 
-			cameraPool.Update(sceneConfig.Camera)
+			sceneConfig.Update()
 
 		}
 
@@ -169,6 +162,37 @@ func New(appConfig *config.App, sceneConfig *config.Scene, receiverMap map[strin
 			time.Sleep(time.Duration(1e9 / appConfig.ModelUpdateFrequency))
 
 		}
+
+	})
+
+	// Route for live reading of the app's config
+	router.HandleFunc("/live/read/config/app", func(w http.ResponseWriter, r *http.Request) {
+
+		// Upgrade to WebSocket
+		ws, err := helper.WebSocketUpgrade(w, r)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+
+		// On first-time connect, send current appConfig
+		if err := ws.WriteJSON(appConfig); err != nil {
+			log.Println(err)
+			ws.Close()
+			return
+		}
+
+		// Send appConfig to WebSocket everytime it's updated
+		appConfig.Create(func(client *pool.Client) {
+
+			if err := ws.WriteJSON(appConfig); err != nil {
+				log.Println(err)
+				ws.Close()
+				client.Delete()
+				return
+			}
+
+		})
 
 	})
 
