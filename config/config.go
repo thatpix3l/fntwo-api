@@ -71,8 +71,8 @@ type App struct {
 	APIListen            Address `json:"api_listen"`             // Address interface the API server listens on
 	ModelUpdateFrequency int     `json:"model_update_frequency"` // Times per second the model transformation data is sent to clients
 	SceneDirPath         string  `json:"scene_home"`             // Path to scene directory
-	SceneFilePath        string  `json:"scene_file"`             // Path to scene config file
-	AppCfgFilePath       string  `json:"config_file"`            // Path to app config file
+	SceneConfigPath      string  `json:"scene_file"`             // Path to scene config file
+	AppConfigPath        string  `json:"config_file"`            // Path to app config file
 	VRMFilePath          string  `json:"vrm_file"`               // Path to VRM file
 	Receiver             string  `json:"receiver"`               // Name of receiver to use on startup
 

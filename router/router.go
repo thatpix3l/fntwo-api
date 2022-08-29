@@ -34,6 +34,11 @@ import (
 	"github.com/thatpix3l/fntwo/receivers"
 )
 
+var (
+	sceneConfig *config.Scene
+	appConfig   *config.App
+)
+
 type receiverInfo struct {
 	Active    string   `json:"active"`
 	Available []string `json:"available"`
@@ -50,16 +55,16 @@ func allowHTTPAllPerms(wPtr *http.ResponseWriter) {
 }
 
 // Save a given scene to the default path
-func saveScene(scene *config.Scene, sceneFilePath string) error {
+func saveSceneConfig() error {
 
 	// Convert the scene config in memory into bytes
-	sceneCfgBytes, err := json.MarshalIndent(scene, "", " ")
+	sceneCfgBytes, err := json.MarshalIndent(sceneConfig, "", " ")
 	if err != nil {
 		return err
 	}
 
 	// Store config bytes into file
-	if err := os.WriteFile(sceneFilePath, sceneCfgBytes, 0644); err != nil {
+	if err := os.WriteFile(appConfig.SceneConfigPath, sceneCfgBytes, 0644); err != nil {
 		return err
 	}
 
@@ -67,7 +72,10 @@ func saveScene(scene *config.Scene, sceneFilePath string) error {
 
 }
 
-func New(appConfig *config.App, sceneConfig *config.Scene, receiverMap map[string]*receivers.MotionReceiver) *mux.Router {
+func New(appConfigPtr *config.App, sceneConfigPtr *config.Scene, receiverMap map[string]*receivers.MotionReceiver) *mux.Router {
+
+	appConfig = appConfigPtr
+	sceneConfig = sceneConfigPtr
 
 	// Use picked receiver from user
 	if receiverMap[appConfig.Receiver] == nil {
@@ -246,7 +254,7 @@ func New(appConfig *config.App, sceneConfig *config.Scene, receiverMap map[strin
 		// Access control
 		allowHTTPAllPerms(&w)
 
-		if err := saveScene(sceneConfig, appConfig.SceneFilePath); err != nil {
+		if err := saveSceneConfig(); err != nil {
 			log.Println(err)
 			return
 		}
@@ -316,7 +324,7 @@ func New(appConfig *config.App, sceneConfig *config.Scene, receiverMap map[strin
 	// Route for changing the active MotionReceiver source used
 	router.HandleFunc("/api/receiver/update", func(w http.ResponseWriter, r *http.Request) {
 
-		log.Println("Received request to change the MotionReceiver source for model")
+		log.Println("Received request to change the current MotionReceiver...")
 
 		// Read in the request body into bytes, cast to string
 		reqBytes, err := io.ReadAll(r.Body)

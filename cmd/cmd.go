@@ -135,7 +135,7 @@ func newRootCommand() *cobra.Command {
 			initializeConfig(cmd)
 
 			// Set values of app config keys that are dependent on command flags
-			appConfig.SceneFilePath = path.Join(cmd.Flag("scene-home").Value.String(), "scene.json")
+			appConfig.SceneConfigPath = path.Join(cmd.Flag("scene-home").Value.String(), "scene.json")
 			appConfig.VRMFilePath = path.Join(cmd.Flag("scene-home").Value.String(), "default.vrm")
 
 			// Create scene home if not explicitly specified elsewhere
@@ -156,7 +156,7 @@ func newRootCommand() *cobra.Command {
 
 	// Here, we start defining a load of flags
 	rootFlags := rootCmd.Flags()
-	rootFlags.StringVar(&appConfig.AppCfgFilePath, "config-app", cfgFileNoExt+".{json,yaml,toml,ini}", "Path to a config file.")
+	rootFlags.StringVar(&appConfig.AppConfigPath, "config-app", cfgFileNoExt+".{json,yaml,toml,ini}", "Path to a config file.")
 	rootFlags.Var(&appConfig.VMCListen, "listen-vmc", "Address to listen on for VMC motion data")
 	rootFlags.Var(&appConfig.FM3DListen, "listen-fm3d", "Address to listen on for Facemotion3D motion data")
 	rootFlags.Var(&appConfig.FM3DDevice, "device-fm3d", "IP address of phone/device that is the source of Facemotion3D motion data")

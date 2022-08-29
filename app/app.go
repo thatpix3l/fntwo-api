@@ -99,12 +99,12 @@ func saveDefaultScene(sceneFilePath string) error {
 func Start(appConfig *config.App) {
 
 	// If needed, create a default scene file
-	if err := saveDefaultScene(appConfig.SceneFilePath); err != nil {
+	if err := saveDefaultScene(appConfig.SceneConfigPath); err != nil {
 		log.Println(err)
 	}
 
 	// Load scene config from disk
-	if err := loadScene(appConfig.SceneFilePath); err != nil {
+	if err := loadScene(appConfig.SceneConfigPath); err != nil {
 		log.Println(err)
 	}
 
