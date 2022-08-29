@@ -75,6 +75,7 @@ func New(appConfig *config.App, sceneConfig *config.Scene, receiverMap map[strin
 	}
 
 	activeReceiver := receiverMap[appConfig.Receiver]
+	activeReceiver.Start()
 
 	// Router for API and web frontend
 	router := mux.NewRouter()
