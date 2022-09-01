@@ -26,6 +26,7 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/gorilla/websocket"
 	"github.com/thatpix3l/fntwo/config"
 	"github.com/thatpix3l/fntwo/frontend"
 	"github.com/thatpix3l/fntwo/helper"
@@ -52,6 +53,21 @@ func allowHTTPAllPerms(wPtr *http.ResponseWriter) {
 	(*wPtr).Header().Set("Access-Control-Allow-Methods", "*")
 	(*wPtr).Header().Set("Access-Control-Allow-Headers", "*")
 
+}
+
+func funcWS(wsCallback func(ws *websocket.Conn)) func(http.ResponseWriter, *http.Request) {
+
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		ws, err := helper.WebSocketUpgrade(w, r)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+
+		wsCallback(ws)
+
+	}
 }
 
 // Save a given scene to the default path
@@ -89,15 +105,9 @@ func New(appConfigPtr *config.App, sceneConfigPtr *config.Scene, receiverMap map
 	router := mux.NewRouter()
 
 	// Route for relaying the internal state of the camera to all clients
-	router.HandleFunc("/live/read/camera", func(w http.ResponseWriter, r *http.Request) {
+	router.HandleFunc("/live/read/camera", funcWS(func(ws *websocket.Conn) {
 
 		log.Println("Adding new camera reader client...")
-
-		// Upgrade GET request to WebSocket
-		ws, err := helper.WebSocketUpgrade(w, r)
-		if err != nil {
-			log.Println(err)
-		}
 
 		// On first-time connect, send the camera state
 		if err := ws.WriteJSON(sceneConfig.Camera); err != nil {
@@ -117,17 +127,11 @@ func New(appConfigPtr *config.App, sceneConfigPtr *config.Scene, receiverMap map
 
 		})
 
-	})
+	}))
 
-	router.HandleFunc("/live/write/camera", func(w http.ResponseWriter, r *http.Request) {
+	router.HandleFunc("/live/write/camera", funcWS(func(ws *websocket.Conn) {
 
 		log.Println("Adding new camera writer client...")
-
-		ws, err := helper.WebSocketUpgrade(w, r)
-		if err != nil {
-			log.Println(err)
-			return
-		}
 
 		for {
 
@@ -139,19 +143,12 @@ func New(appConfigPtr *config.App, sceneConfigPtr *config.Scene, receiverMap map
 
 		}
 
-	})
+	}))
 
 	// Route for updating VRM model data to all clients
-	router.HandleFunc("/live/read/model", func(w http.ResponseWriter, r *http.Request) {
+	router.HandleFunc("/live/read/model", funcWS(func(ws *websocket.Conn) {
 
 		log.Println("Adding new model reader client...")
-
-		// Upgrade model data client into a WebSocket
-		ws, err := helper.WebSocketUpgrade(w, r)
-		if err != nil {
-			log.Println(err)
-			return
-		}
 
 		if err := ws.WriteJSON(activeReceiver.VRM); err != nil {
 			log.Println(err)
@@ -175,19 +172,12 @@ func New(appConfigPtr *config.App, sceneConfigPtr *config.Scene, receiverMap map
 
 		}
 
-	})
+	}))
 
 	// Route for live reading of the app's config
-	router.HandleFunc("/live/read/config/app", func(w http.ResponseWriter, r *http.Request) {
+	router.HandleFunc("/live/read/config/app", funcWS(func(ws *websocket.Conn) {
 
 		log.Println("Adding new app config reader client...")
-
-		// Upgrade to WebSocket
-		ws, err := helper.WebSocketUpgrade(w, r)
-		if err != nil {
-			log.Println(err)
-			return
-		}
 
 		// On first-time connect, send current appConfig
 		if err := ws.WriteJSON(appConfig); err != nil {
@@ -208,7 +198,7 @@ func New(appConfigPtr *config.App, sceneConfigPtr *config.Scene, receiverMap map
 
 		})
 
-	})
+	}))
 
 	// Route for getting the default VRM model
 	router.HandleFunc("/api/model", func(w http.ResponseWriter, r *http.Request) {

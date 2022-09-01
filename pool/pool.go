@@ -30,9 +30,9 @@ type Pool struct {
 }
 
 type Client struct {
-	ID             string         // Unique client ID
-	updateCallback updateCallback // Callback to run on new relayedData
-	poolPtr        *Pool          // Pointer to an existing pool
+	ID       string         // Unique client ID
+	callback updateCallback // Callback to run on new relayedData
+	poolPtr  *Pool          // Pointer to an existing pool
 }
 
 // Create pool client, with callback that gets run everytime pool's Update is called
@@ -40,9 +40,9 @@ func (p Pool) Create(process updateCallback) {
 
 	clientID := helper.RandomString(8)
 	newClient := Client{
-		ID:             clientID,
-		updateCallback: process,
-		poolPtr:        &p,
+		ID:       clientID,
+		callback: process,
+		poolPtr:  &p,
 	}
 	p.clients[clientID] = newClient
 
@@ -61,7 +61,7 @@ func (p Pool) LogCount() {
 // Run each client's update callback
 func (p Pool) Update() {
 	for _, c := range p.clients {
-		c.updateCallback(&c)
+		c.callback(&c)
 	}
 }
 
