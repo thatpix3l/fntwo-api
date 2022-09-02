@@ -201,6 +201,29 @@ func New(appConfigPtr *config.App, sceneConfigPtr *config.Scene, receiverMap map
 
 	}))
 
+	router.HandleFunc("/live/read/config/scene", funcRoute(func(w http.ResponseWriter, r *http.Request, ws *websocket.Conn) {
+
+		log.Println("Adding new scene config reader client...")
+
+		// On first-time connect, send current sceneConfig
+		if err := ws.WriteJSON(sceneConfig); err != nil {
+			log.Println(err)
+			ws.Close()
+			return
+		}
+
+		// Send sceneConfig to WebSocket everytime it's updated
+		sceneConfig.Create(func(client *pool.Client) {
+			if err := ws.WriteJSON(sceneConfig); err != nil {
+				log.Println(err)
+				ws.Close()
+				client.Delete()
+				return
+			}
+		})
+
+	}))
+
 	// Route for getting the default VRM model
 	router.HandleFunc("/api/model", func(w http.ResponseWriter, r *http.Request) {
 
