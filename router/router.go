@@ -55,7 +55,7 @@ func allowHTTPAllPerms(wPtr *http.ResponseWriter) {
 
 }
 
-func funcWS(wsCallback func(ws *websocket.Conn)) func(http.ResponseWriter, *http.Request) {
+func funcRoute(route func(w http.ResponseWriter, r *http.Request, ws *websocket.Conn)) func(http.ResponseWriter, *http.Request) {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 
@@ -65,9 +65,10 @@ func funcWS(wsCallback func(ws *websocket.Conn)) func(http.ResponseWriter, *http
 			return
 		}
 
-		wsCallback(ws)
+		route(w, r, ws)
 
 	}
+
 }
 
 // Save a given scene to the default path
@@ -105,7 +106,7 @@ func New(appConfigPtr *config.App, sceneConfigPtr *config.Scene, receiverMap map
 	router := mux.NewRouter()
 
 	// Route for relaying the internal state of the camera to all clients
-	router.HandleFunc("/live/read/camera", funcWS(func(ws *websocket.Conn) {
+	router.HandleFunc("/live/read/camera", funcRoute(func(w http.ResponseWriter, r *http.Request, ws *websocket.Conn) {
 
 		log.Println("Adding new camera reader client...")
 
@@ -129,7 +130,7 @@ func New(appConfigPtr *config.App, sceneConfigPtr *config.Scene, receiverMap map
 
 	}))
 
-	router.HandleFunc("/live/write/camera", funcWS(func(ws *websocket.Conn) {
+	router.HandleFunc("/live/write/camera", funcRoute(func(w http.ResponseWriter, r *http.Request, ws *websocket.Conn) {
 
 		log.Println("Adding new camera writer client...")
 
@@ -146,7 +147,7 @@ func New(appConfigPtr *config.App, sceneConfigPtr *config.Scene, receiverMap map
 	}))
 
 	// Route for updating VRM model data to all clients
-	router.HandleFunc("/live/read/model", funcWS(func(ws *websocket.Conn) {
+	router.HandleFunc("/live/read/model", funcRoute(func(w http.ResponseWriter, r *http.Request, ws *websocket.Conn) {
 
 		log.Println("Adding new model reader client...")
 
@@ -175,7 +176,7 @@ func New(appConfigPtr *config.App, sceneConfigPtr *config.Scene, receiverMap map
 	}))
 
 	// Route for live reading of the app's config
-	router.HandleFunc("/live/read/config/app", funcWS(func(ws *websocket.Conn) {
+	router.HandleFunc("/live/read/config/app", funcRoute(func(w http.ResponseWriter, r *http.Request, ws *websocket.Conn) {
 
 		log.Println("Adding new app config reader client...")
 
@@ -289,8 +290,8 @@ func New(appConfigPtr *config.App, sceneConfigPtr *config.Scene, receiverMap map
 
 	}).Methods("GET", "OPTIONS")
 
-	// Route for retrieving info about receivers, including which one is in use
-	router.HandleFunc("/api/receiver", func(w http.ResponseWriter, r *http.Request) {
+	// Route for retrieving the list of available receivers
+	router.HandleFunc("/api/receiver/available", func(w http.ResponseWriter, r *http.Request) {
 
 		log.Println("Received API request for receiver info")
 
