@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -35,6 +36,8 @@ var (
 	fm3dReceiver  *receivers.MotionReceiver
 	serverEnabled = true
 	currentConn   net.Conn
+
+	matchFrames = regexp.MustCompile(`(.*___FACEMOTION3D(.*?))___FACEMOTION3D`)
 )
 
 // Parse a full frame of motion data.
@@ -200,27 +203,27 @@ func listenTCP() {
 		for {
 
 			// Repeatedly read from connection new face data
-			connBuf := make([]byte, 2048)
+			connBuf := make([]byte, 8192)
 			_, err := currentConn.Read(connBuf)
 			if err != nil {
 				break
 			}
 			liveFrames += string(connBuf)
+			liveFrames = strings.ReplaceAll(liveFrames, "\x00", "")
 
-			// Attempt to pull the first valid frame of data.
-			latestFrame := strings.Split(liveFrames, "___FACEMOTION3D")[0]
-			if latestFrame == "" {
+			matchedFrames := matchFrames.FindStringSubmatch(liveFrames)
+			if len(matchedFrames) == 0 {
 				continue
 			}
 
-			// Remove null bytes
-			latestFrame = strings.ReplaceAll(latestFrame, "\x00", "")
+			allBeforeDelimiter := matchedFrames[1]
+			latestFrame := matchedFrames[2]
 
 			// Parse the frame of data
 			parseFrame(latestFrame)
 
 			// Prune the frame of data that we just worked on, so we do not work with it on next iteration
-			liveFrames = strings.ReplaceAll(liveFrames, latestFrame+"___FACEMOTION3D", "")
+			liveFrames = strings.ReplaceAll(liveFrames, allBeforeDelimiter, "")
 
 		}
 
