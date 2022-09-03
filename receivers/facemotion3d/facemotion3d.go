@@ -33,7 +33,7 @@ import (
 
 var (
 	fm3dReceiver  *receivers.MotionReceiver
-	serverEnabled = false
+	serverEnabled = true
 	currentConn   net.Conn
 )
 
@@ -127,10 +127,10 @@ func parseFrame(frameStr string) {
 			bone := obj.Bone{
 				Rotation: obj.Rotation{
 					Quaternion: obj.QuaternionRotation{
-						X: float32(boneQuat.X),
-						Y: float32(boneQuat.Y),
-						Z: float32(boneQuat.Z),
-						W: float32(boneQuat.W),
+						X: boneQuat.X,
+						Y: boneQuat.Y,
+						Z: boneQuat.Z,
+						W: boneQuat.W,
 					},
 				},
 			}

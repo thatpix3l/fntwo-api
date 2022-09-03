@@ -24,17 +24,17 @@ import (
 
 // Positioning
 type Position struct {
-	X float32 `json:"x"`
-	Y float32 `json:"y"`
-	Z float32 `json:"z"`
+	X float64 `json:"x"`
+	Y float64 `json:"y"`
+	Z float64 `json:"z"`
 }
 
 // Quaternion rotation
 type QuaternionRotation struct {
-	X float32 `json:"x"`
-	Y float32 `json:"y"`
-	Z float32 `json:"z"`
-	W float32 `json:"w"`
+	X float64 `json:"x"`
+	Y float64 `json:"y"`
+	Z float64 `json:"z"`
+	W float64 `json:"w"`
 }
 
 type Rotation struct {
@@ -53,8 +53,8 @@ type Camera struct {
 	GazeFrom    Position `json:"gaze_from"`
 }
 
-// Primitive VRM blend shape value. By default, a float32
-type BlendShape float32
+// Primitive VRM blend shape value. By default, a float64
+type BlendShape float64
 
 type BlendShapes map[string]BlendShape
 
@@ -100,6 +100,8 @@ func (v *VRM) WriteBone(key string, value Bone) {
 	// Lock VRM for safe writing
 	v.bonesMutex.Lock()
 	defer v.bonesMutex.Unlock()
+
+	value.Rotation.Quaternion.X = value.Rotation.Quaternion.X * -1
 
 	// Modify VRM bones
 	v.Bones[key] = value

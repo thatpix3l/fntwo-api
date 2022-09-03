@@ -37,14 +37,14 @@ var (
 // The positioning of the data is special, where the index is as follows:
 // index 0, 1, 2: bone position X, Y, Z
 // index 3, 4, 5, 6: bone quaternion rotation X, Y, Z, W
-func parseBone(msg *osc.Message) ([]float32, error) {
+func parseBone(msg *osc.Message) ([]float64, error) {
 
 	// Slice of bone data parameters
-	var boneData []float32
+	var boneData []float64
 
 	// For each OSC message index, skipping the first index...
 	for _, v := range msg.Arguments[1:] {
-		coord, ok := v.(float32)
+		coord, ok := v.(float64)
 		if !ok {
 			return nil, fmt.Errorf("Unable to type assert OSC message as []float32 bone coords: %s", msg)
 		}

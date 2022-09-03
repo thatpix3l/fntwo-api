@@ -67,9 +67,9 @@ const (
 
 func normalizePosition(position obj.Position, worldOrigin obj.Position, video videoMetadata) obj.Position {
 	return obj.Position{
-		X: (position.X - worldOrigin.X) * float32(video.Width),
-		Y: (position.Y - worldOrigin.Y) * float32(video.Height),
-		Z: (position.Z - worldOrigin.Z) * float32(coordMultiplier),
+		X: (position.X - worldOrigin.X) * float64(video.Width),
+		Y: (position.Y - worldOrigin.Y) * float64(video.Height),
+		Z: (position.Z - worldOrigin.Z) * float64(coordMultiplier),
 	}
 }
 
@@ -86,9 +86,9 @@ func centroid(positions ...obj.Position) obj.Position {
 		sum.Z += position.Z
 	}
 
-	sum.X /= float32(len(positions))
-	sum.Y /= float32(len(positions))
-	sum.Z /= float32(len(positions))
+	sum.X /= float64(len(positions))
+	sum.Y /= float64(len(positions))
+	sum.Z /= float64(len(positions))
 
 	return sum
 }
