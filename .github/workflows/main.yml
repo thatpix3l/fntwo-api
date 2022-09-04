@@ -33,7 +33,7 @@ jobs:
         run: go build -o ./build
           
       - name: Compress
-        run: zip ./build/fntwo-${{ matrix.os }}-${{ matrix.arch }}.zip ./build/fntwo
+        run: zip ./build/fntwo-${{ matrix.os }}-${{ matrix.arch }}.zip ./build/fntwo*
           
       - name: Upload artifact
         uses: actions/upload-artifact@v3
