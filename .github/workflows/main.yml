@@ -1,0 +1,44 @@
+
+name: Deploy Development
+on:
+  push:
+    branches:
+    - "development"
+
+jobs:
+  development:
+    name: Development
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [linux, windows, darwin]
+        arch: [amd64, arm64]
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Generate version strings and frontend
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+        uses: actions/setup-node@v3
+        uses: actions/setup-go@v3
+        run: go generate ./...
+      
+      - name: Build
+        env:
+          GOOS: ${{ matrix.os }}
+          GOARCH: ${{ matrix.arch }}
+        run: go build -o ./build
+          
+      - name: Compress
+        run: zip ./build/fntwo-${{ matrix.os }}-${{ matrix.arch }}.zip ./build/fntwo
+      
+      - name: Deploy
+        uses: "marvinpinto/action-automatic-releases@latest"
+        with:
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          automatic_release_tag: "latest"
+          prerelease: true
+          title: "Development Build"
+          files: |
+            ./build/fntwo-${{ matrix.os }}-${{ matrix.arch }}.zip
