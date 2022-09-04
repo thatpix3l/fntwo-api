@@ -45,6 +45,7 @@ jobs:
   deploy-development:
     needs: build-development
     name: Deploy Development
+    runs-on: ubuntu-latest
     steps:
       - name: Download Artifact
         uses: "actions/download-artifact@v3"
