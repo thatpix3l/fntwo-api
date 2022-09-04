@@ -1,5 +1,5 @@
 
-name: Deploy Development
+name: Build and Deploy Development
 on:
   push:
     branches:
@@ -7,10 +7,10 @@ on:
     workflow_dispatch:
 
 jobs:
-  development:
-    name: Development
+  build-development:
+    name: Build Development
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
         os: [linux, windows, darwin]
         arch: [amd64, arm64]
@@ -34,13 +34,24 @@ jobs:
           
       - name: Compress
         run: zip ./build/fntwo-${{ matrix.os }}-${{ matrix.arch }}.zip ./build/fntwo
-      
-      - name: Deploy
-        uses: "marvinpinto/action-automatic-releases@latest"
+          
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
         with:
-          repo_token: "${{ secrets.GITHUB_TOKEN }}"
-          automatic_release_tag: "latest"
-          prerelease: true
-          title: "Development Build"
-          files: |
+          name: development-artifacts
+          path: |
             ./build/fntwo-${{ matrix.os }}-${{ matrix.arch }}.zip
+      
+  deploy-development:
+    needs: build-development
+    name: Deploy Development
+    steps:
+      - name: Download Artifact
+        uses: "actions/download-artifact@v3"
+        with:
+          name: development-artifacts
+          path: bruh
+      
+      - name: Display structure of downloaded files
+        run: ls -alh
+        working-directory: bruh
