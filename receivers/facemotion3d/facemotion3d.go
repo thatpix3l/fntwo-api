@@ -72,7 +72,7 @@ func parseFrame(frameStr string) {
 			key = strings.ToUpper(key[0:1]) + key[1:]
 
 			// Blend shape value
-			value, err := strconv.ParseFloat(singlePayload[1], 32)
+			value, err := strconv.ParseFloat(singlePayload[1], 64)
 			if err != nil {
 				continue
 			}
@@ -98,23 +98,23 @@ func parseFrame(frameStr string) {
 			key = strings.ToUpper(key[0:1]) + key[1:]
 
 			// For each value for the current bone, convert it from a string to a float and store it in boneValues
-			var boneValues []float32
+			var boneValues []float64
 			for _, v := range strings.Split(keyVal[1], ",") {
 
-				rawFloat, err := strconv.ParseFloat(v, 32)
+				rawFloat, err := strconv.ParseFloat(v, 64)
 				if err != nil {
 					log.Print(err)
 					continue
 				}
 
-				boneValues = append(boneValues, float32(rawFloat))
+				boneValues = append(boneValues, rawFloat)
 
 			}
 
 			// The bone rotations are in Euler. Instead, convert it to quaternion for the frontend
 
 			// Divisor for certain bones to rotate normally when sent to the web client
-			var divisor float32
+			var divisor float64
 			if key == "Head" {
 				divisor = 32
 			} else {
