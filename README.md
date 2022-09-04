@@ -27,6 +27,6 @@ Start the program in a terminal window; open both your desktop browser and the O
 In the desktop browser, pressing ESCAPE opens the main menu.
 In the main menu, dragging and dropping a `.vrm` file onto the left pane loads the new model.
 Controls are as follows:
-- left-click and drag **rotates the camera**
-- right-click and drag **pans the camera** up & down, left & right.
+- Left-click and drag **rotates the camera**
+- Right-click and drag **pans the camera** up & down, left & right.
 - W, A, S, D **pans the camera** forward & backward, left & right.
