@@ -23,10 +23,13 @@ jobs:
       - uses: actions/setup-node@v3
       - uses: actions/setup-go@v3
 
-      - name: Generate version strings and frontend
-        run: go generate ./...
+      - name: Generate version strings
+        run: go generate ./pkg/generate_version/generate_version.go
       
-      - name: Build
+      - name: Build frontend
+        run: go generate ./pkg/frontend/frontend.go
+      
+      - name: Build backend
         env:
           GOOS: ${{ matrix.os }}
           GOARCH: ${{ matrix.arch }}
@@ -47,12 +50,18 @@ jobs:
     name: Deploy Development
     runs-on: ubuntu-latest
     steps:
-      - name: Download Artifact
+
+      - name: Download Artifacts
         uses: "actions/download-artifact@v3"
         with:
-          name: development-artifacts
-          path: bruh
+          path: artifacts
       
-      - name: Display structure of downloaded files
-        run: ls -alh
-        working-directory: bruh
+      - name: Create development release
+        uses: "marvinpinto/action-automatic-releases@v1.2.1"
+          with:
+            repo_token: "${{ secrets.GITHUB_TOKEN }}"
+            automatic_release_tag: "development"
+            prerelease: true
+            title: "Development Builds"
+            files: |
+              artifacts/*.zip
