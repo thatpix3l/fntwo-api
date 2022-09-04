@@ -58,10 +58,10 @@ jobs:
       
       - name: Create development release
         uses: "marvinpinto/action-automatic-releases@v1.2.1"
-          with:
-            repo_token: "${{ secrets.GITHUB_TOKEN }}"
-            automatic_release_tag: "development"
-            prerelease: true
-            title: "Development Builds"
-            files: |
-              artifacts/*.zip
+        with:
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          automatic_release_tag: "development"
+          prerelease: true
+          title: "Development Builds"
+          files: |
+            artifacts/*.zip
