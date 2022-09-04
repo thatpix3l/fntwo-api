@@ -313,8 +313,8 @@ func New(appConfigPtr *config.App, sceneConfigPtr *config.Scene, receiverMap map
 
 	}).Methods("GET", "OPTIONS")
 
-	// Route for retrieving the list of available receivers
-	router.HandleFunc("/api/receiver/available", func(w http.ResponseWriter, r *http.Request) {
+	// Route for retrieving info about active and available receivers
+	router.HandleFunc("/api/receiver/info", func(w http.ResponseWriter, r *http.Request) {
 
 		log.Println("Received API request for receiver info")
 
