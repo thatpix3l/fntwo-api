@@ -15,13 +15,14 @@ jobs:
         arch: [amd64, arm64]
     runs-on: ubuntu-latest
     steps:
-
-      - name: Generate version strings and frontend
-        uses: actions/checkout@v3
+      
+      - uses: actions/checkout@v3
         with:
           submodules: recursive
-        uses: actions/setup-node@v3
-        uses: actions/setup-go@v3
+      - uses: actions/setup-node@v3
+      - uses: actions/setup-go@v3
+
+      - name: Generate version strings and frontend
         run: go generate ./...
       
       - name: Build
