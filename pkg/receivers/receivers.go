@@ -18,8 +18,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package receivers
 
 import (
-	"github.com/thatpix3l/fntwo/config"
-	"github.com/thatpix3l/fntwo/obj"
+	"github.com/thatpix3l/fntwo/pkg/config"
+	"github.com/thatpix3l/fntwo/pkg/obj"
 )
 
 type MotionReceiver struct {

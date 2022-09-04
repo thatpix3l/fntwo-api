@@ -20,7 +20,7 @@ package pool
 import (
 	"log"
 
-	"github.com/thatpix3l/fntwo/helper"
+	"github.com/thatpix3l/fntwo/pkg/helper"
 )
 
 type updateCallback func(client *Client)

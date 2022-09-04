@@ -23,13 +23,13 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/thatpix3l/fntwo/config"
-	"github.com/thatpix3l/fntwo/obj"
-	"github.com/thatpix3l/fntwo/receivers"
-	"github.com/thatpix3l/fntwo/receivers/facemotion3d"
-	"github.com/thatpix3l/fntwo/receivers/mediapipeweb"
-	"github.com/thatpix3l/fntwo/receivers/virtualmotioncapture"
-	"github.com/thatpix3l/fntwo/router"
+	"github.com/thatpix3l/fntwo/pkg/config"
+	"github.com/thatpix3l/fntwo/pkg/obj"
+	"github.com/thatpix3l/fntwo/pkg/receivers"
+	"github.com/thatpix3l/fntwo/pkg/receivers/facemotion3d"
+	"github.com/thatpix3l/fntwo/pkg/receivers/mediapipeweb"
+	"github.com/thatpix3l/fntwo/pkg/receivers/virtualmotioncapture"
+	"github.com/thatpix3l/fntwo/pkg/router"
 )
 
 var (

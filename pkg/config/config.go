@@ -22,8 +22,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/thatpix3l/fntwo/obj"
-	"github.com/thatpix3l/fntwo/pool"
+	"github.com/thatpix3l/fntwo/pkg/obj"
+	"github.com/thatpix3l/fntwo/pkg/pool"
 )
 
 type Address string

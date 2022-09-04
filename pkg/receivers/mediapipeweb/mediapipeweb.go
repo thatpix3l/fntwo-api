@@ -23,10 +23,10 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/thatpix3l/fntwo/config"
-	"github.com/thatpix3l/fntwo/helper"
-	"github.com/thatpix3l/fntwo/obj"
-	"github.com/thatpix3l/fntwo/receivers"
+	"github.com/thatpix3l/fntwo/pkg/config"
+	"github.com/thatpix3l/fntwo/pkg/helper"
+	"github.com/thatpix3l/fntwo/pkg/obj"
+	"github.com/thatpix3l/fntwo/pkg/receivers"
 )
 
 type videoMetadata struct {

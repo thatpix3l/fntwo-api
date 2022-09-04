@@ -17,7 +17,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 package main
 
-import "github.com/thatpix3l/fntwo/cmd"
+import "github.com/thatpix3l/fntwo/pkg/cmd"
 
 func main() {
 	cmd.Start()

@@ -23,9 +23,9 @@ import (
 	"unicode"
 
 	"github.com/hypebeast/go-osc/osc"
-	"github.com/thatpix3l/fntwo/config"
-	"github.com/thatpix3l/fntwo/obj"
-	"github.com/thatpix3l/fntwo/receivers"
+	"github.com/thatpix3l/fntwo/pkg/config"
+	"github.com/thatpix3l/fntwo/pkg/obj"
+	"github.com/thatpix3l/fntwo/pkg/receivers"
 )
 
 var (

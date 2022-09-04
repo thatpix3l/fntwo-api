@@ -28,9 +28,9 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
-	"github.com/thatpix3l/fntwo/app"
-	"github.com/thatpix3l/fntwo/config"
-	"github.com/thatpix3l/fntwo/version"
+	"github.com/thatpix3l/fntwo/pkg/app"
+	"github.com/thatpix3l/fntwo/pkg/config"
+	"github.com/thatpix3l/fntwo/pkg/version"
 )
 
 var (

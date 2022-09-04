@@ -27,12 +27,12 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
-	"github.com/thatpix3l/fntwo/config"
-	"github.com/thatpix3l/fntwo/frontend"
-	"github.com/thatpix3l/fntwo/helper"
-	"github.com/thatpix3l/fntwo/obj"
-	"github.com/thatpix3l/fntwo/pool"
-	"github.com/thatpix3l/fntwo/receivers"
+	"github.com/thatpix3l/fntwo/pkg/config"
+	"github.com/thatpix3l/fntwo/pkg/frontend"
+	"github.com/thatpix3l/fntwo/pkg/helper"
+	"github.com/thatpix3l/fntwo/pkg/obj"
+	"github.com/thatpix3l/fntwo/pkg/pool"
+	"github.com/thatpix3l/fntwo/pkg/receivers"
 )
 
 var (
