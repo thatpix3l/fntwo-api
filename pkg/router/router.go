@@ -40,7 +40,7 @@ var (
 	appConfig   *config.App
 )
 
-type receiverInfo struct {
+type receiver struct {
 	Active    string   `json:"active"`
 	Available []string `json:"available"`
 }
@@ -239,7 +239,7 @@ func New(appConfigPtr *config.App, sceneConfigPtr *config.Scene, receiverMap map
 	}).Methods("GET", "OPTIONS")
 
 	// Route for setting the default VRM model
-	router.HandleFunc("/api/model/update", func(w http.ResponseWriter, r *http.Request) {
+	router.HandleFunc("/api/model", func(w http.ResponseWriter, r *http.Request) {
 
 		log.Println("Received request to set default VRM file")
 
@@ -261,7 +261,7 @@ func New(appConfigPtr *config.App, sceneConfigPtr *config.Scene, receiverMap map
 	}).Methods("PUT", "OPTIONS")
 
 	// Route for saving the internal state of the scene config
-	router.HandleFunc("/api/config/scene/update", func(w http.ResponseWriter, r *http.Request) {
+	router.HandleFunc("/api/config/scene", func(w http.ResponseWriter, r *http.Request) {
 
 		log.Println("Received request to save current scene")
 
@@ -314,11 +314,11 @@ func New(appConfigPtr *config.App, sceneConfigPtr *config.Scene, receiverMap map
 	}).Methods("GET", "OPTIONS")
 
 	// Route for retrieving info about active and available receivers
-	router.HandleFunc("/api/receiver/info", func(w http.ResponseWriter, r *http.Request) {
+	router.HandleFunc("/api/receivers", func(w http.ResponseWriter, r *http.Request) {
 
 		log.Println("Received API request for receiver info")
 
-		info := receiverInfo{}
+		info := receiver{}
 		for name := range receiverMap {
 			info.Available = append(info.Available, name)
 		}
@@ -335,22 +335,25 @@ func New(appConfigPtr *config.App, sceneConfigPtr *config.Scene, receiverMap map
 
 	}).Methods("GET", "OPTIONS")
 
-	// Route for changing the active MotionReceiver source used
-	router.HandleFunc("/api/receiver/update", func(w http.ResponseWriter, r *http.Request) {
+	// Route for updating the active receiver
+	router.HandleFunc("/api/receivers", func(w http.ResponseWriter, r *http.Request) {
 
 		log.Println("Received request to change the current MotionReceiver...")
 
-		// Read in the request body into bytes, cast to string
+		// Read in the request body into bytes
 		reqBytes, err := io.ReadAll(r.Body)
 		if err != nil {
 			log.Println(err)
 			return
 		}
-		suggestedReceiver := string(reqBytes)
+
+		// Unmarshal the request body bytes into JSON
+		var receiverInfoPayload receiver
+		json.Unmarshal(reqBytes, &receiverInfoPayload)
 
 		// Error if the suggested receiver does not exist
-		if receiverMap[suggestedReceiver] == nil {
-			log.Printf("Suggested receiver \"%s\" does not exist!", suggestedReceiver)
+		if receiverMap[receiverInfoPayload.Active] == nil {
+			log.Printf("Suggested receiver \"%s\" does not exist!", receiverInfoPayload.Active)
 			return
 		}
 
@@ -358,15 +361,15 @@ func New(appConfigPtr *config.App, sceneConfigPtr *config.Scene, receiverMap map
 		activeReceiver.Stop()
 
 		// Switch the active receiver
-		appConfig.Receiver = suggestedReceiver
+		appConfig.Receiver = receiverInfoPayload.Active
 		activeReceiver = receiverMap[appConfig.Receiver]
 
 		// Start the new receiver
 		activeReceiver.Start()
 
-		log.Printf("Successfully changed the active receiver to %s", suggestedReceiver)
+		log.Printf("Successfully changed the active receiver to %s", appConfig.Receiver)
 
-	}).Methods("PUT", "OPTIONS")
+	}).Methods("PATCH", "OPTIONS")
 
 	// All other requests are sent to the embedded web frontend
 	frontendRoot, err := frontend.FS()
