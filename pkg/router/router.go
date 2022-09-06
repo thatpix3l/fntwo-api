@@ -55,7 +55,7 @@ func allowHTTPAllPerms(wPtr *http.ResponseWriter) {
 
 }
 
-func funcRoute(route func(w http.ResponseWriter, r *http.Request, ws *websocket.Conn)) func(http.ResponseWriter, *http.Request) {
+func webSocketMiddleware(route func(ws *websocket.Conn)) func(http.ResponseWriter, *http.Request) {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 
@@ -65,7 +65,7 @@ func funcRoute(route func(w http.ResponseWriter, r *http.Request, ws *websocket.
 			return
 		}
 
-		route(w, r, ws)
+		route(ws)
 
 	}
 
@@ -106,7 +106,7 @@ func New(appConfigPtr *config.App, sceneConfigPtr *config.Scene, receiverMap map
 	router := mux.NewRouter()
 
 	// Route for relaying the internal state of the camera to all clients
-	router.HandleFunc("/live/read/camera", funcRoute(func(w http.ResponseWriter, r *http.Request, ws *websocket.Conn) {
+	router.HandleFunc("/live/read/camera", webSocketMiddleware(func(ws *websocket.Conn) {
 
 		log.Println("Adding new camera reader client...")
 
@@ -130,7 +130,7 @@ func New(appConfigPtr *config.App, sceneConfigPtr *config.Scene, receiverMap map
 
 	}))
 
-	router.HandleFunc("/live/write/camera", funcRoute(func(w http.ResponseWriter, r *http.Request, ws *websocket.Conn) {
+	router.HandleFunc("/live/write/camera", webSocketMiddleware(func(ws *websocket.Conn) {
 
 		log.Println("Adding new camera writer client...")
 
@@ -147,7 +147,7 @@ func New(appConfigPtr *config.App, sceneConfigPtr *config.Scene, receiverMap map
 	}))
 
 	// Route for updating VRM model data to all clients
-	router.HandleFunc("/live/read/model", funcRoute(func(w http.ResponseWriter, r *http.Request, ws *websocket.Conn) {
+	router.HandleFunc("/live/read/model", webSocketMiddleware(func(ws *websocket.Conn) {
 
 		log.Println("Adding new model reader client...")
 
@@ -176,7 +176,7 @@ func New(appConfigPtr *config.App, sceneConfigPtr *config.Scene, receiverMap map
 	}))
 
 	// Route for live reading of the app's config
-	router.HandleFunc("/live/read/config/app", funcRoute(func(w http.ResponseWriter, r *http.Request, ws *websocket.Conn) {
+	router.HandleFunc("/live/read/config/app", webSocketMiddleware(func(ws *websocket.Conn) {
 
 		log.Println("Adding new app config reader client...")
 
@@ -201,7 +201,7 @@ func New(appConfigPtr *config.App, sceneConfigPtr *config.Scene, receiverMap map
 
 	}))
 
-	router.HandleFunc("/live/read/config/scene", funcRoute(func(w http.ResponseWriter, r *http.Request, ws *websocket.Conn) {
+	router.HandleFunc("/live/read/config/scene", webSocketMiddleware(func(ws *websocket.Conn) {
 
 		log.Println("Adding new scene config reader client...")
 
