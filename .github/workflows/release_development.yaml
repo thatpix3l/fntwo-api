@@ -2,7 +2,7 @@ name: Create Development Release
 on:
   push:
     branches:
-    - main
+    - development
     workflow_dispatch:
 
 jobs:

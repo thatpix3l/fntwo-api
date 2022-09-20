@@ -2,7 +2,7 @@ name: Create Stable Release
 on:
   push:
     branches:
-    - development
+    - main
     workflow_dispatch:
 
 jobs:
