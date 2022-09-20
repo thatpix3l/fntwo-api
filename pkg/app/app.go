@@ -111,9 +111,9 @@ func Start(appConfig *config.App) {
 	// Create map of MotionReceiver
 	receiverMap := make(map[string]*receivers.MotionReceiver)
 
-	receiverMap["MediapipeWeb"] = mediapipeweb.New(appConfig)
-	receiverMap["VirtualMotionCapture"] = virtualmotioncapture.New(appConfig)
-	receiverMap["Facemotion3D"] = facemotion3d.New(appConfig)
+	receiverMap["MediapipeWeb"] = mediapipeweb.New(appConfig).Start()
+	receiverMap["VirtualMotionCapture"] = virtualmotioncapture.New(appConfig).Start()
+	receiverMap["Facemotion3D"] = facemotion3d.New(appConfig).Start()
 
 	// Blocking listen and serve for WebSockets and API server
 	log.Printf("Serving API on %s", appConfig.APIListen)

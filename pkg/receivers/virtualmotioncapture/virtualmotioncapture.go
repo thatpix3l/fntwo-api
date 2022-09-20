@@ -147,15 +147,11 @@ func listenVMC() {
 
 }
 
-func stopListening() {
-	server.CloseConnection()
-}
-
 // Create a new MotionReceiver.
 // Uses the VMC protocol, a subset of the OSC protocol, which internally uses UDP for low-latency motion parsing.
 func New(appConfig *config.App) *receivers.MotionReceiver {
 
-	vmcReceiver = receivers.New(appConfig, listenVMC, stopListening)
+	vmcReceiver = receivers.New(appConfig, listenVMC)
 	return vmcReceiver
 
 }

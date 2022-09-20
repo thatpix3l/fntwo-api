@@ -30,13 +30,12 @@ type MotionReceiver struct {
 }
 
 // Create a new motion receiver.
-func New(appConfig *config.App, start func(), stop func()) *MotionReceiver {
+func New(appConfig *config.App, start func()) *MotionReceiver {
 
 	return &MotionReceiver{
 		AppConfig:     appConfig,
 		VRM:           obj.NewVRM(),
 		startCallback: start,
-		stopCallback:  stop,
 	}
 
 }

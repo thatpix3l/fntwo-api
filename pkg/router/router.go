@@ -100,7 +100,6 @@ func New(appConfigPtr *config.App, sceneConfigPtr *config.Scene, receiverMap map
 	}
 
 	activeReceiver := receiverMap[appConfig.Receiver]
-	activeReceiver.Start()
 
 	// Router for API and web frontend
 	router := mux.NewRouter()
@@ -357,15 +356,9 @@ func New(appConfigPtr *config.App, sceneConfigPtr *config.Scene, receiverMap map
 			return
 		}
 
-		// Stop the current receiver
-		activeReceiver.Stop()
-
 		// Switch the active receiver
 		appConfig.Receiver = receiverInfoPayload.Active
 		activeReceiver = receiverMap[appConfig.Receiver]
-
-		// Start the new receiver
-		activeReceiver.Start()
 
 		log.Printf("Successfully changed the active receiver to %s", appConfig.Receiver)
 

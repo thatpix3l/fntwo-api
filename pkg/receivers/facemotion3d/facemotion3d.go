@@ -33,9 +33,8 @@ import (
 )
 
 var (
-	fm3dReceiver  *receivers.MotionReceiver
-	serverEnabled = true
-	currentConn   net.Conn
+	fm3dReceiver *receivers.MotionReceiver
+	currentConn  net.Conn
 
 	matchFrames = regexp.MustCompile(`(.*___FACEMOTION3D(.*?))___FACEMOTION3D`)
 )
@@ -178,7 +177,7 @@ func listenTCP() {
 	}
 	defer listener.Close()
 
-	for serverEnabled {
+	for {
 
 		log.Printf("Telling device at \"%s\" to send motion Facemotion3D data through TCP", fm3dReceiver.AppConfig.FM3DDevice.IP())
 		if err := sendThroughTCP(fm3dReceiver.AppConfig.FM3DDevice.IP() + ":49993"); err != nil {
@@ -234,16 +233,11 @@ func listenTCP() {
 
 }
 
-func stopListening() {
-	serverEnabled = false
-	currentConn.Close()
-}
-
 // Create a new MotionReceiver.
 // Uses the Facemotion3D app for face data. Internally, TCP is used to communicate with a device.
 func New(appConfig *config.App) *receivers.MotionReceiver {
 
-	fm3dReceiver = receivers.New(appConfig, listenTCP, stopListening)
+	fm3dReceiver = receivers.New(appConfig, listenTCP)
 	return fm3dReceiver
 
 }

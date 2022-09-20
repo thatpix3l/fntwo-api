@@ -29,6 +29,10 @@ import (
 	"github.com/thatpix3l/fntwo/pkg/receivers"
 )
 
+var (
+	server = &http.Server{}
+)
+
 type videoMetadata struct {
 	Width  int `json:"width"`  // Width of the source video
 	Height int `json:"height"` // Height of the source video
@@ -135,7 +139,7 @@ func listenMediapipeWeb() {
 // Listens for WebSocket connections
 func New(appConfig *config.App) *receivers.MotionReceiver {
 
-	mpReceiver = receivers.New(appConfig, listenMediapipeWeb, func() {})
+	mpReceiver = receivers.New(appConfig, listenMediapipeWeb)
 	return mpReceiver
 
 }
