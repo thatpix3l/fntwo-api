@@ -1,5 +1,5 @@
 
-name: Build and Deploy Stable
+name: Build and Deploy Development
 on:
   push:
     branches:
