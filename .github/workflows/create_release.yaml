@@ -1,14 +1,23 @@
-
-name: Build and Deploy Stable
+name: Create Release
 on:
-  push:
-    branches:
-    - "main"
-    workflow_dispatch:
+  workflow_call:
+    inputs:
 
+      release_type:
+        required: true
+        type: string
+
+      release_type_pretty:
+        required: true
+        type: string
+      
+      release_tag:
+        required: true
+        type: string
+      
 jobs:
   build:
-    name: Build Stable
+    name: Build ${{ input.release_type_pretty }}
     strategy:
       fail-fast: true
       matrix:
@@ -45,11 +54,11 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           path: |
-            ./build/*
+            ./build/*.zip*
       
   deploy:
     needs: build
-    name: Deploy Stable
+    name: Deploy ${{ input.release_type_pretty }}
     runs-on: ubuntu-latest
     steps:
 
@@ -60,8 +69,8 @@ jobs:
         uses: "marvinpinto/action-automatic-releases@v1.2.1"
         with:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
-          automatic_release_tag: "latest"
+          automatic_release_tag: ${{ input.release_tag }}
           prerelease: false
-          title: "Stable Builds"
+          title: ${{ input.release_type_pretty }} Builds
           files: |
             artifact/*

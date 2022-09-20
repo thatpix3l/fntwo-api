@@ -1,0 +1,14 @@
+name: Create Stable Release
+on:
+  push:
+    branches:
+    - main
+    workflow_dispatch:
+
+jobs:
+  create_release:
+    uses: ./.github/workflows/create_release.yaml
+    with:
+      release_type: stable
+      release_type_pretty: Stable
+      release_tag: latest

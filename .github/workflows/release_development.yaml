@@ -1,0 +1,14 @@
+name: Create Development Release
+on:
+  push:
+    branches:
+    - main
+    workflow_dispatch:
+
+jobs:
+  create_release:
+    uses: ./.github/workflows/create_release.yaml
+    with:
+      release_type: development
+      release_type_pretty: Development
+      release_tag: development
