@@ -17,7 +17,7 @@ on:
       
 jobs:
   build:
-    name: Build ${{ input.release_type_pretty }}
+    name: Build ${{ inputs.release_type_pretty }}
     strategy:
       fail-fast: true
       matrix:
@@ -58,7 +58,7 @@ jobs:
       
   deploy:
     needs: build
-    name: Deploy ${{ input.release_type_pretty }}
+    name: Deploy ${{ inputs.release_type_pretty }}
     runs-on: ubuntu-latest
     steps:
 
@@ -69,8 +69,8 @@ jobs:
         uses: "marvinpinto/action-automatic-releases@v1.2.1"
         with:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
-          automatic_release_tag: ${{ input.release_tag }}
+          automatic_release_tag: ${{ inputs.release_tag }}
           prerelease: false
-          title: ${{ input.release_type_pretty }} Builds
+          title: ${{ inputs.release_type_pretty }} Builds
           files: |
             artifact/*
