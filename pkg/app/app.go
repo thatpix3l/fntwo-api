@@ -112,8 +112,14 @@ func Start(appConfig *config.App) {
 	receiverMap := make(map[string]*receivers.MotionReceiver)
 
 	receiverMap["MediapipeWeb"] = mediapipeweb.New(appConfig).Start()
+
+	if appConfig.FM3DDevice == "" {
+		log.Println("No IP was provided for a Facemotion3D device, not starting receiver for it...")
+	} else {
+		receiverMap["Facemotion3D"] = facemotion3d.New(appConfig).Start()
+	}
+
 	receiverMap["VirtualMotionCapture"] = virtualmotioncapture.New(appConfig).Start()
-	receiverMap["Facemotion3D"] = facemotion3d.New(appConfig).Start()
 
 	// Blocking listen and serve for WebSockets and API server
 	log.Printf("Serving API on %s", appConfig.APIListen)
