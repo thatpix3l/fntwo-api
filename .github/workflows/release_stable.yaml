@@ -12,3 +12,4 @@ jobs:
       release_type: stable
       release_type_pretty: Stable
       release_tag: latest
+      prerelease: false

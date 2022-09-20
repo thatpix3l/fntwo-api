@@ -12,3 +12,4 @@ jobs:
       release_type: development
       release_type_pretty: Development
       release_tag: development
+      prerelease: true
