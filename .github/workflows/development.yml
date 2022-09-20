@@ -1,13 +1,13 @@
 
-name: Build and Deploy Development
+name: Build and Deploy Stable
 on:
   push:
     branches:
-    - "main"
+    - "development"
     workflow_dispatch:
 
 jobs:
-  build-development:
+  build:
     name: Build Development
     strategy:
       fail-fast: true
@@ -44,8 +44,8 @@ jobs:
           path: |
             ./build/fntwo-${{ matrix.os }}-${{ matrix.arch }}.zip
       
-  deploy-development:
-    needs: build-development
+  deploy:
+    needs: build
     name: Deploy Development
     runs-on: ubuntu-latest
     steps:
@@ -53,7 +53,7 @@ jobs:
       - name: Download Artifacts
         uses: "actions/download-artifact@v3"
 
-      - name: Create development release
+      - name: Create release
         uses: "marvinpinto/action-automatic-releases@v1.2.1"
         with:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"

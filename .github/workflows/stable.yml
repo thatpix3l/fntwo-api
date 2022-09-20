@@ -1,0 +1,64 @@
+
+name: Build and Deploy Stable
+on:
+  push:
+    branches:
+    - "main"
+    workflow_dispatch:
+
+jobs:
+  build:
+    name: Build Stable
+    strategy:
+      fail-fast: true
+      matrix:
+        os: [linux, windows, darwin]
+        arch: [amd64, arm64]
+    runs-on: ubuntu-latest
+    steps:
+      
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+      - uses: actions/setup-node@v3
+      - uses: actions/setup-go@v3
+
+      - name: Generate version strings
+        run: go generate ./pkg/generate_version/generate_version.go
+      
+      - name: Build frontend
+        run: go generate ./pkg/frontend/frontend.go
+      
+      - name: Build backend
+        env:
+          GOOS: ${{ matrix.os }}
+          GOARCH: ${{ matrix.arch }}
+        run: go build -o ./build
+          
+      - name: Compress
+        run: zip ./build/fntwo-${{ matrix.os }}-${{ matrix.arch }}.zip ./build/fntwo*
+          
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          path: |
+            ./build/fntwo-${{ matrix.os }}-${{ matrix.arch }}.zip
+      
+  deploy:
+    needs: build
+    name: Deploy Stable
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Download Artifacts
+        uses: "actions/download-artifact@v3"
+
+      - name: Create release
+        uses: "marvinpinto/action-automatic-releases@v1.2.1"
+        with:
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          automatic_release_tag: "latest"
+          prerelease: false
+          title: "Stable Builds"
+          files: |
+            artifact/*.zip
