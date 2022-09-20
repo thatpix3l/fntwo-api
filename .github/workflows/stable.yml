@@ -38,11 +38,14 @@ jobs:
       - name: Compress
         run: zip ./build/fntwo-${{ matrix.os }}-${{ matrix.arch }}.zip ./build/fntwo*
           
+      - name: Compute SHA256 Hash
+        run: cat ./build/fntwo-${{ matrix.os }}-${{ matrix.arch }}.zip | sha256sum | awk '{print $1}' > ./build/fntwo-${{ matrix.os }}-${{ matrix.arch }}.zip.sha256
+          
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
           path: |
-            ./build/fntwo-${{ matrix.os }}-${{ matrix.arch }}.zip
+            ./build/*
       
   deploy:
     needs: build
@@ -61,4 +64,4 @@ jobs:
           prerelease: false
           title: "Stable Builds"
           files: |
-            artifact/*.zip
+            artifact/*
