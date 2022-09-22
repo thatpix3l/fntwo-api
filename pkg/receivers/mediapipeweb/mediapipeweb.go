@@ -18,13 +18,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package mediapipeweb
 
 import (
-	"log"
 	"math"
 	"net/http"
 
 	"github.com/gorilla/mux"
 	"github.com/thatpix3l/fntwo/pkg/config"
 	"github.com/thatpix3l/fntwo/pkg/helper"
+	"github.com/thatpix3l/fntwo/pkg/logger"
 	"github.com/thatpix3l/fntwo/pkg/obj"
 	"github.com/thatpix3l/fntwo/pkg/receivers"
 )
@@ -114,7 +114,7 @@ func listenMediapipeWeb() {
 
 		ws, err := helper.WebSocketUpgrade(w, r)
 		if err != nil {
-			log.Println(err)
+			logger.S.Warnln(err)
 			return
 		}
 
@@ -123,7 +123,7 @@ func listenMediapipeWeb() {
 			// Mediapipe face mesh related data
 			var mpFaceMesh []obj.Position
 			if err := ws.ReadJSON(&mpFaceMesh); err != nil {
-				log.Println(err)
+				logger.S.Warnln(err)
 				return
 			}
 

@@ -20,7 +20,6 @@ package router
 import (
 	"encoding/json"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"time"
@@ -30,6 +29,7 @@ import (
 	"github.com/thatpix3l/fntwo/pkg/config"
 	"github.com/thatpix3l/fntwo/pkg/frontend"
 	"github.com/thatpix3l/fntwo/pkg/helper"
+	"github.com/thatpix3l/fntwo/pkg/logger"
 	"github.com/thatpix3l/fntwo/pkg/obj"
 	"github.com/thatpix3l/fntwo/pkg/pool"
 	"github.com/thatpix3l/fntwo/pkg/receivers"
@@ -61,7 +61,7 @@ func webSocketMiddleware(route func(ws *websocket.Conn)) func(http.ResponseWrite
 
 		ws, err := helper.WebSocketUpgrade(w, r)
 		if err != nil {
-			log.Println(err)
+			logger.S.Warnln(err)
 			return
 		}
 
@@ -96,7 +96,7 @@ func New(appConfigPtr *config.App, sceneConfigPtr *config.Scene, receiverMap map
 
 	// Use picked receiver from user
 	if receiverMap[appConfig.Receiver] == nil {
-		log.Printf("Suggested receiver \"%s\" does not exist!", appConfig.Receiver)
+		logger.S.Warnf("Suggested receiver \"%s\" does not exist!", appConfig.Receiver)
 	}
 
 	activeReceiver := receiverMap[appConfig.Receiver]
@@ -107,11 +107,11 @@ func New(appConfigPtr *config.App, sceneConfigPtr *config.Scene, receiverMap map
 	// Route for relaying the internal state of the camera to all clients
 	router.HandleFunc("/live/read/camera", webSocketMiddleware(func(ws *websocket.Conn) {
 
-		log.Println("Adding new camera reader client...")
+		logger.S.Infoln("Adding new camera reader client...")
 
 		// On first-time connect, send the camera state
 		if err := ws.WriteJSON(sceneConfig.Camera); err != nil {
-			log.Println(err)
+			logger.S.Warnln(err)
 			return
 		}
 
@@ -120,7 +120,7 @@ func New(appConfigPtr *config.App, sceneConfigPtr *config.Scene, receiverMap map
 
 			// Write camera data to connected frontend client
 			if err := ws.WriteJSON(sceneConfig.Camera); err != nil {
-				log.Println(err)
+				logger.S.Warnln(err)
 				client.Delete()
 				ws.Close()
 			}
@@ -131,7 +131,7 @@ func New(appConfigPtr *config.App, sceneConfigPtr *config.Scene, receiverMap map
 
 	router.HandleFunc("/live/write/camera", webSocketMiddleware(func(ws *websocket.Conn) {
 
-		log.Println("Adding new camera writer client...")
+		logger.S.Infoln("Adding new camera writer client...")
 
 		for {
 
@@ -148,10 +148,10 @@ func New(appConfigPtr *config.App, sceneConfigPtr *config.Scene, receiverMap map
 	// Route for updating VRM model data to all clients
 	router.HandleFunc("/live/read/model", webSocketMiddleware(func(ws *websocket.Conn) {
 
-		log.Println("Adding new model reader client...")
+		logger.S.Infoln("Adding new model reader client...")
 
 		if err := ws.WriteJSON(activeReceiver.VRM); err != nil {
-			log.Println(err)
+			logger.S.Warnln(err)
 			return
 		}
 
@@ -177,11 +177,11 @@ func New(appConfigPtr *config.App, sceneConfigPtr *config.Scene, receiverMap map
 	// Route for live reading of the app's config
 	router.HandleFunc("/live/read/config/app", webSocketMiddleware(func(ws *websocket.Conn) {
 
-		log.Println("Adding new app config reader client...")
+		logger.S.Infoln("Adding new app config reader client...")
 
 		// On first-time connect, send current appConfig
 		if err := ws.WriteJSON(appConfig); err != nil {
-			log.Println(err)
+			logger.S.Warnln(err)
 			ws.Close()
 			return
 		}
@@ -190,7 +190,7 @@ func New(appConfigPtr *config.App, sceneConfigPtr *config.Scene, receiverMap map
 		appConfig.Create(func(client *pool.Client) {
 
 			if err := ws.WriteJSON(appConfig); err != nil {
-				log.Println(err)
+				logger.S.Warnln(err)
 				ws.Close()
 				client.Delete()
 				return
@@ -202,11 +202,11 @@ func New(appConfigPtr *config.App, sceneConfigPtr *config.Scene, receiverMap map
 
 	router.HandleFunc("/live/read/config/scene", webSocketMiddleware(func(ws *websocket.Conn) {
 
-		log.Println("Adding new scene config reader client...")
+		logger.S.Infoln("Adding new scene config reader client...")
 
 		// On first-time connect, send current sceneConfig
 		if err := ws.WriteJSON(sceneConfig); err != nil {
-			log.Println(err)
+			logger.S.Warnln(err)
 			ws.Close()
 			return
 		}
@@ -214,7 +214,7 @@ func New(appConfigPtr *config.App, sceneConfigPtr *config.Scene, receiverMap map
 		// Send sceneConfig to WebSocket everytime it's updated
 		sceneConfig.Create(func(client *pool.Client) {
 			if err := ws.WriteJSON(sceneConfig); err != nil {
-				log.Println(err)
+				logger.S.Warnln(err)
 				ws.Close()
 				client.Delete()
 				return
@@ -226,7 +226,7 @@ func New(appConfigPtr *config.App, sceneConfigPtr *config.Scene, receiverMap map
 	// Route for getting the default VRM model
 	router.HandleFunc("/api/model", func(w http.ResponseWriter, r *http.Request) {
 
-		log.Println("Received request to retrieve default VRM file")
+		logger.S.Infoln("Received request to retrieve default VRM file")
 
 		// Set model name and CORS policy
 		w.Header().Set("Content-Disposition", "attachment; filename=default.vrm")
@@ -240,20 +240,20 @@ func New(appConfigPtr *config.App, sceneConfigPtr *config.Scene, receiverMap map
 	// Route for setting the default VRM model
 	router.HandleFunc("/api/model", func(w http.ResponseWriter, r *http.Request) {
 
-		log.Println("Received request to set default VRM file")
+		logger.S.Infoln("Received request to set default VRM file")
 
 		allowHTTPAllPerms(&w)
 
 		// Destination VRM file on system
 		dest, err := os.Create(appConfig.VRMFilePath)
 		if err != nil {
-			log.Println(err)
+			logger.S.Warnln(err)
 			return
 		}
 
 		// Copy request body binary to destination on system
 		if _, err := io.Copy(dest, r.Body); err != nil {
-			log.Println(err)
+			logger.S.Warnln(err)
 			return
 		}
 
@@ -262,13 +262,13 @@ func New(appConfigPtr *config.App, sceneConfigPtr *config.Scene, receiverMap map
 	// Route for saving the internal state of the scene config
 	router.HandleFunc("/api/config/scene", func(w http.ResponseWriter, r *http.Request) {
 
-		log.Println("Received request to save current scene")
+		logger.S.Infoln("Received request to save current scene")
 
 		// Access control
 		allowHTTPAllPerms(&w)
 
 		if err := saveSceneConfig(); err != nil {
-			log.Println(err)
+			logger.S.Warnln(err)
 			return
 		}
 
@@ -276,13 +276,13 @@ func New(appConfigPtr *config.App, sceneConfigPtr *config.Scene, receiverMap map
 
 	router.HandleFunc("/api/config/scene", func(w http.ResponseWriter, r *http.Request) {
 
-		log.Println("Received request to retrieve current state of scene config")
+		logger.S.Infoln("Received request to retrieve current state of scene config")
 
 		allowHTTPAllPerms(&w)
 
 		sceneConfigBytes, err := json.Marshal(sceneConfig)
 		if err != nil {
-			log.Println(err)
+			logger.S.Warnln(err)
 			return
 		}
 
@@ -294,7 +294,7 @@ func New(appConfigPtr *config.App, sceneConfigPtr *config.Scene, receiverMap map
 	// Route for retrieving the initial config for the server
 	router.HandleFunc("/api/config/app", func(w http.ResponseWriter, r *http.Request) {
 
-		log.Println("Received request to retrieve initial config")
+		logger.S.Infoln("Received request to retrieve initial config")
 
 		// Access control
 		allowHTTPAllPerms(&w)
@@ -302,7 +302,7 @@ func New(appConfigPtr *config.App, sceneConfigPtr *config.Scene, receiverMap map
 		// Marshal initial config into bytes
 		appConfigBytes, err := json.Marshal(appConfig)
 		if err != nil {
-			log.Println(err)
+			logger.S.Warnln(err)
 			return
 		}
 
@@ -315,7 +315,7 @@ func New(appConfigPtr *config.App, sceneConfigPtr *config.Scene, receiverMap map
 	// Route for retrieving info about active and available receivers
 	router.HandleFunc("/api/receivers", func(w http.ResponseWriter, r *http.Request) {
 
-		log.Println("Received API request for receiver info")
+		logger.S.Infoln("Received API request for receiver info")
 
 		info := receiver{}
 		for name := range receiverMap {
@@ -325,7 +325,7 @@ func New(appConfigPtr *config.App, sceneConfigPtr *config.Scene, receiverMap map
 
 		bytes, err := json.Marshal(info)
 		if err != nil {
-			log.Println(err)
+			logger.S.Warnln(err)
 			return
 		}
 
@@ -337,12 +337,12 @@ func New(appConfigPtr *config.App, sceneConfigPtr *config.Scene, receiverMap map
 	// Route for updating the active receiver
 	router.HandleFunc("/api/receivers", func(w http.ResponseWriter, r *http.Request) {
 
-		log.Println("Received request to change the current MotionReceiver...")
+		logger.S.Infoln("Received request to change the current MotionReceiver...")
 
 		// Read in the request body into bytes
 		reqBytes, err := io.ReadAll(r.Body)
 		if err != nil {
-			log.Println(err)
+			logger.S.Warnln(err)
 			return
 		}
 
@@ -352,7 +352,7 @@ func New(appConfigPtr *config.App, sceneConfigPtr *config.Scene, receiverMap map
 
 		// Error if the suggested receiver does not exist
 		if receiverMap[receiverInfoPayload.Active] == nil {
-			log.Printf("Suggested receiver \"%s\" does not exist!", receiverInfoPayload.Active)
+			logger.S.Warnf("Suggested receiver \"%s\" does not exist!", receiverInfoPayload.Active)
 			return
 		}
 
@@ -360,14 +360,14 @@ func New(appConfigPtr *config.App, sceneConfigPtr *config.Scene, receiverMap map
 		appConfig.Receiver = receiverInfoPayload.Active
 		activeReceiver = receiverMap[appConfig.Receiver]
 
-		log.Printf("Successfully changed the active receiver to %s", appConfig.Receiver)
+		logger.S.Infof("Successfully changed the active receiver to %s", appConfig.Receiver)
 
 	}).Methods("PATCH", "OPTIONS")
 
 	// All other requests are sent to the embedded web frontend
 	frontendRoot, err := frontend.FS()
 	if err != nil {
-		log.Fatal(err)
+		logger.S.Errorln(err)
 	}
 	router.PathPrefix("/").Handler(http.FileServer(http.FS(frontendRoot)))
 

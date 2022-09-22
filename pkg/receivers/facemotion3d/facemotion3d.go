@@ -19,7 +19,6 @@ package facemotion3d
 
 import (
 	"fmt"
-	"log"
 	"net"
 	"regexp"
 	"strconv"
@@ -27,6 +26,7 @@ import (
 	"time"
 
 	"github.com/thatpix3l/fntwo/pkg/config"
+	"github.com/thatpix3l/fntwo/pkg/logger"
 	"github.com/thatpix3l/fntwo/pkg/obj"
 	"github.com/thatpix3l/fntwo/pkg/receivers"
 	"github.com/westphae/quaternion"
@@ -102,7 +102,7 @@ func parseFrame(frameStr string) {
 
 				rawFloat, err := strconv.ParseFloat(v, 64)
 				if err != nil {
-					log.Print(err)
+					logger.S.Warnln(err)
 					continue
 				}
 
@@ -172,31 +172,31 @@ func listenTCP() {
 	// Listen for new connections
 	listener, err := net.Listen("tcp", fm3dReceiver.AppConfig.FM3DListen.String())
 	if err != nil {
-		log.Print(err)
+		logger.S.Warnln(err)
 		return
 	}
 	defer listener.Close()
 
 	for {
 
-		log.Printf("Telling device at \"%s\" to send motion Facemotion3D data through TCP", fm3dReceiver.AppConfig.FM3DDevice.IP())
+		logger.S.Infof("Telling device at \"%s\" to send motion Facemotion3D data through TCP", fm3dReceiver.AppConfig.FM3DDevice.IP())
 		if err := sendThroughTCP(fm3dReceiver.AppConfig.FM3DDevice.IP() + ":49993"); err != nil {
 
-			log.Print("Facemotion3D source error, waiting 3 seconds")
+			logger.S.Warnln("Facemotion3D source error, waiting 3 seconds")
 			time.Sleep(3 * time.Second)
 			continue
 
 		}
 
 		// Accept new connection
-		log.Print("Waiting for Facemotion3D client")
+		logger.S.Infoln("Waiting for Facemotion3D client")
 		if conn, err := listener.Accept(); err != nil {
-			log.Println(err)
+			logger.S.Errorln(err)
 		} else {
 			currentConn = conn
 		}
 
-		log.Print("Accepted new Facemotion3D client")
+		logger.S.Infoln("Accepted new Facemotion3D client")
 
 		var liveFrames string
 		for {
@@ -226,7 +226,7 @@ func listenTCP() {
 
 		}
 
-		log.Print("Facemotion3D source disconnected, waiting 3 seconds")
+		logger.S.Infoln("Facemotion3D source disconnected, waiting 3 seconds")
 		time.Sleep(3 * time.Second)
 
 	}

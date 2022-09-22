@@ -18,10 +18,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package config
 
 import (
-	"log"
 	"strconv"
 	"strings"
 
+	"github.com/thatpix3l/fntwo/pkg/logger"
 	"github.com/thatpix3l/fntwo/pkg/obj"
 	"github.com/thatpix3l/fntwo/pkg/pool"
 )
@@ -45,7 +45,7 @@ func (a *Address) Port() int {
 	fullAddress := strings.Split(string(*a), ":")
 	port, err := strconv.Atoi(fullAddress[1])
 	if err != nil {
-		log.Fatal(err)
+		logger.S.Errorln(err)
 	}
 
 	return port

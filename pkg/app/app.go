@@ -19,17 +19,18 @@ package app
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 	"os"
 
 	"github.com/thatpix3l/fntwo/pkg/config"
+	"github.com/thatpix3l/fntwo/pkg/logger"
 	"github.com/thatpix3l/fntwo/pkg/obj"
 	"github.com/thatpix3l/fntwo/pkg/receivers"
 	"github.com/thatpix3l/fntwo/pkg/receivers/facemotion3d"
 	"github.com/thatpix3l/fntwo/pkg/receivers/mediapipeweb"
 	"github.com/thatpix3l/fntwo/pkg/receivers/virtualmotioncapture"
 	"github.com/thatpix3l/fntwo/pkg/router"
+	"go.uber.org/zap"
 )
 
 var (
@@ -100,12 +101,12 @@ func Start(appConfig *config.App) {
 
 	// If needed, create a default scene file
 	if err := saveDefaultScene(appConfig.SceneConfigPath); err != nil {
-		log.Println(err)
+		zap.L().Sugar().Errorln(err)
 	}
 
 	// Load scene config from disk
 	if err := loadScene(appConfig.SceneConfigPath); err != nil {
-		log.Println(err)
+		logger.S.Errorln(err)
 	}
 
 	// Create map of MotionReceiver
@@ -114,7 +115,7 @@ func Start(appConfig *config.App) {
 	receiverMap["MediapipeWeb"] = mediapipeweb.New(appConfig).Start()
 
 	if appConfig.FM3DDevice == "" {
-		log.Println("No IP was provided for a Facemotion3D device, not starting receiver for it...")
+		logger.S.Warnln("No IP was provided for a Facemotion3D device, not starting receiver for it...")
 	} else {
 		receiverMap["Facemotion3D"] = facemotion3d.New(appConfig).Start()
 	}
@@ -122,7 +123,7 @@ func Start(appConfig *config.App) {
 	receiverMap["VirtualMotionCapture"] = virtualmotioncapture.New(appConfig).Start()
 
 	// Blocking listen and serve for WebSockets and API server
-	log.Printf("Serving API on %s", appConfig.APIListen)
+	logger.S.Infof("Serving API on %s", appConfig.APIListen)
 	routerAPI := router.New(appConfig, sceneConfig, receiverMap)
 	http.ListenAndServe(string(appConfig.APIListen), routerAPI)
 

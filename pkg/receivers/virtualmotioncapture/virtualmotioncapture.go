@@ -19,11 +19,11 @@ package virtualmotioncapture
 
 import (
 	"fmt"
-	"log"
 	"unicode"
 
 	"github.com/hypebeast/go-osc/osc"
 	"github.com/thatpix3l/fntwo/pkg/config"
+	"github.com/thatpix3l/fntwo/pkg/logger"
 	"github.com/thatpix3l/fntwo/pkg/obj"
 	"github.com/thatpix3l/fntwo/pkg/receivers"
 )
@@ -61,8 +61,7 @@ func parseBone(msg *osc.Message) ([]float64, error) {
 func listenVMC() {
 
 	// Listen for face and bone data through OSC from a device in the VMC protocol format
-	log.Println(vmcReceiver.AppConfig.APIListen)
-	log.Printf("Listening for VMC model transformation data on %s", vmcReceiver.AppConfig.VMCListen)
+	logger.S.Infof("Listening for VMC model transformation data on %s", vmcReceiver.AppConfig.VMCListen)
 
 	d := osc.NewStandardDispatcher()
 

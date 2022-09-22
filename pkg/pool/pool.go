@@ -18,9 +18,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package pool
 
 import (
-	"log"
-
 	"github.com/thatpix3l/fntwo/pkg/helper"
+	"github.com/thatpix3l/fntwo/pkg/logger"
 )
 
 type updateCallback func(client *Client)
@@ -55,7 +54,7 @@ func (c Client) Delete() {
 
 // Log the amount of clients in pool
 func (p Pool) LogCount() {
-	log.Printf("Number of clients: %d", len(p.clients))
+	logger.S.Infof("Number of clients: %d", len(p.clients))
 }
 
 // Run each client's update callback

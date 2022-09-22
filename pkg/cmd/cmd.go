@@ -19,7 +19,6 @@ package cmd
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"path"
 	"strings"
@@ -30,6 +29,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/thatpix3l/fntwo/pkg/app"
 	"github.com/thatpix3l/fntwo/pkg/config"
+	"github.com/thatpix3l/fntwo/pkg/logger"
 	"github.com/thatpix3l/fntwo/pkg/version"
 )
 
@@ -55,7 +55,7 @@ func Start() {
 	// Build out root command
 	cmd := newRootCommand()
 	if err := cmd.Execute(); err != nil {
-		log.Fatal(err)
+		logger.S.Errorln(err)
 	}
 
 }
@@ -78,13 +78,12 @@ func initializeConfig(cmd *cobra.Command) {
 	appConfigFlagName := "config-app"
 	appConfigFlag := cmd.Flag(appConfigFlagName)
 	if appConfigFlag.Changed {
-		log.Print("Default config file was changed")
 		v.SetConfigFile(appConfigFlag.Value.String())
 	}
 
 	// Read in config file
 	if err := v.ReadInConfig(); err != nil {
-		log.Print(err)
+		logger.S.Warnln(err)
 	}
 
 	// Create equivalent env var keys for each flag, replace value in flag if not
@@ -141,7 +140,7 @@ func newRootCommand() *cobra.Command {
 			// Create scene home if not explicitly specified elsewhere
 			if !cmd.Flag("scene-home").Changed {
 				if err := os.MkdirAll(cmd.Flag("scene-home").Value.String(), 0755); err != nil {
-					log.Fatal(err)
+					logger.S.Errorln(err)
 				}
 			}
 
