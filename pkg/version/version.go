@@ -17,9 +17,5 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 package version
 
-import (
-	_ "embed"
-)
-
-//go:embed version.txt
-var Text string
+// Version text to display when running the `version` subcommand
+var Text = "unknown"

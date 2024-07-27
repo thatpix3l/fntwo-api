@@ -28,11 +28,11 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
 	"github.com/thatpix3l/fntwo/pkg/config"
-	"github.com/thatpix3l/fntwo/pkg/frontend"
 	"github.com/thatpix3l/fntwo/pkg/helper"
 	"github.com/thatpix3l/fntwo/pkg/obj"
 	"github.com/thatpix3l/fntwo/pkg/pool"
 	"github.com/thatpix3l/fntwo/pkg/receivers"
+	"github.com/thatpix3l/fntwo/pkg/web"
 )
 
 var (
@@ -372,11 +372,7 @@ func New(appConfigPtr *config.App, sceneConfigPtr *config.Scene, receiverMap map
 	}).Methods("PATCH", "OPTIONS")
 
 	// All other requests are sent to the embedded web frontend
-	frontendRoot, err := frontend.FS()
-	if err != nil {
-		log.Fatal(err)
-	}
-	router.PathPrefix("/").Handler(http.FileServer(http.FS(frontendRoot)))
+	router.PathPrefix("/").Handler(http.FileServer(http.FS(web.Public())))
 
 	return router
 

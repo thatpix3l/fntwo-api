@@ -15,31 +15,15 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-package frontend
+package web
 
 import (
-	"embed"
 	"io/fs"
+	"os"
+	"path"
 )
 
-//go:generate echo "Pulling frontend dependencies..."
-//go:generate npm --prefix static install
-
-//go:generate echo "Building frontend..."
-//go:generate npm --prefix static run build
-
-var (
-
-	//go:embed static/build
-	staticFS embed.FS
-)
-
-func FS() (fs.FS, error) {
-	rootFS, err := fs.Sub(staticFS, "static/build")
-	if err != nil {
-		return nil, err
-	}
-
-	return rootFS, nil
-
+// Static web frontend filesystem.
+func Public() fs.FS {
+	return os.DirFS(path.Join(path.Dir(os.Args[0]), "public"))
 }
